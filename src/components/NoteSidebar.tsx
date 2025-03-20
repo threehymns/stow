@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,16 +39,6 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 type NewItemFormValues = {
   name: string;
@@ -58,7 +49,6 @@ export function NoteSidebar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<string | null>(null);
-  const [folderToDelete, setFolderToDelete] = useState<string | null>(null);
   
   const { 
     notes, 
@@ -104,13 +94,6 @@ export function NoteSidebar() {
     createFolder(data.name, selectedFolderForNewItem);
     setNewFolderDialogOpen(false);
     form.reset();
-  };
-
-  const handleDeleteFolder = () => {
-    if (folderToDelete) {
-      deleteFolder(folderToDelete);
-      setFolderToDelete(null);
-    }
   };
 
   // Helper to get all child folder IDs (recursively)
@@ -189,7 +172,7 @@ export function NoteSidebar() {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className="text-destructive focus:text-destructive"
-                onClick={() => setFolderToDelete(folder.id)}
+                onClick={() => deleteFolder(folder.id)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Folder
@@ -365,6 +348,7 @@ export function NoteSidebar() {
         <ScrollArea className="flex-1">
           <div className="p-2">
             {searchTerm ? (
+              // Search results
               <div>
                 {filteredFolders.length === 0 && filteredNotes.length === 0 ? (
                   <p className="text-xs text-muted-foreground p-2">No results found</p>
@@ -408,6 +392,7 @@ export function NoteSidebar() {
                 )}
               </div>
             ) : (
+              // Normal folder structure
               <>
                 {renderFolderContents(null)}
               </>
@@ -477,27 +462,6 @@ export function NoteSidebar() {
           </Form>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!folderToDelete} onOpenChange={(open) => !open && setFolderToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Folder</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this folder? All notes inside this folder will be moved to the parent folder.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteFolder}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
