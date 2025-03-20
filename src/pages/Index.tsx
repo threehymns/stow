@@ -1,13 +1,23 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { NoteLayout } from '@/components/NoteLayout';
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 const Index = () => {
+  // Change document title
+  useEffect(() => {
+    document.title = 'Notes App';
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen"
+    >
+      <NoteLayout />
+    </motion.div>
   );
 };
 
