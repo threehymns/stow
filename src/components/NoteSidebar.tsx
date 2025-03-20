@@ -9,6 +9,7 @@ import { Form, FormField, FormItem, FormControl } from '@/components/ui/form';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useForm } from 'react-hook-form';
 import useNoteStore from '@/store/noteStore';
+import useSettingsStore from '@/store/settingsStore';
 import { Folder, Note } from '@/types/notes';
 import { cn } from '@/lib/utils';
 import { 
@@ -49,6 +50,8 @@ export function NoteSidebar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<string | null>(null);
+  
+  const { showNoteDates } = useSettingsStore();
   
   const { 
     notes, 
@@ -255,9 +258,11 @@ export function NoteSidebar() {
               <h3 className="text-xs font-medium truncate text-sidebar-foreground">
                 {note.title}
               </h3>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {format(new Date(note.updatedAt), 'MMM d, h:mm a')}
-              </p>
+              {showNoteDates && (
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {format(new Date(note.updatedAt), 'MMM d, h:mm a')}
+                </p>
+              )}
             </div>
             {renderNoteContextMenu(note)}
           </div>
@@ -381,9 +386,11 @@ export function NoteSidebar() {
                           <h3 className="text-xs font-medium truncate text-sidebar-foreground">
                             {note.title}
                           </h3>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {format(new Date(note.updatedAt), 'MMM d, h:mm a')}
-                          </p>
+                          {showNoteDates && (
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {format(new Date(note.updatedAt), 'MMM d, h:mm a')}
+                            </p>
+                          )}
                         </div>
                         {renderNoteContextMenu(note)}
                       </div>
