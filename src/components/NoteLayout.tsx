@@ -1,12 +1,15 @@
-
-import { NoteSidebar } from './NoteSidebar';
-import { MarkdownEditor } from './MarkdownEditor';
-import { useEffect } from 'react';
-import useNoteStore from '@/store/noteStore';
-import { Settings as SettingsIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { NoteSidebar } from "./NoteSidebar";
+import { MarkdownEditor } from "./MarkdownEditor";
+import { useEffect } from "react";
+import useNoteStore from "@/store/noteStore";
+import { Settings as SettingsIcon } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function NoteLayout() {
   const { notes, folders, createNote, createFolder } = useNoteStore();
@@ -15,9 +18,9 @@ export function NoteLayout() {
   useEffect(() => {
     // Create root folder if it doesn't exist
     if (folders.length === 0) {
-      createFolder('All Notes', null);
+      createFolder("All Notes", null);
     }
-    
+
     // Create initial note if none exist
     if (notes.length === 0) {
       createNote();

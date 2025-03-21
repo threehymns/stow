@@ -1,37 +1,40 @@
-
-import { NoteLayout } from '@/components/NoteLayout';
-import { useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Command } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { NoteLayout } from "@/components/NoteLayout";
+import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Command } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Index = () => {
   // Change document title
   useEffect(() => {
-    document.title = 'Notes App';
+    document.title = "Notes App";
   }, []);
 
   const openCommandBar = (e: React.MouseEvent) => {
     e.preventDefault();
     // Simulate the Ctrl+K shortcut
-    const event = new KeyboardEvent('keydown', {
-      key: 'k',
+    const event = new KeyboardEvent("keydown", {
+      key: "k",
       ctrlKey: true,
-      bubbles: true
+      bubbles: true,
     });
     document.dispatchEvent(event);
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
       className="min-h-screen"
     >
       <NoteLayout />
-      
+
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
