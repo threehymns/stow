@@ -1,15 +1,22 @@
-
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input"; // Added import for Input component
 import { ArrowLeft, Moon, Sun, Monitor } from "lucide-react";
 import { Link } from "react-router-dom";
 import useSettingsStore from "@/store/settingsStore";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export default function Settings() {
-  const { theme, showNoteDates, setTheme, setShowNoteDates } = useSettingsStore();
+  const { theme, showNoteDates, setTheme, setShowNoteDates } =
+    useSettingsStore();
 
   return (
     <div className="h-screen flex flex-col p-4 md:p-8 max-w-4xl mx-auto animate-fade-in">
@@ -33,7 +40,13 @@ export default function Settings() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label>Theme</Label>
-              <ToggleGroup type="single" value={theme} onValueChange={(value) => value && setTheme(value as 'light' | 'dark' | 'system')}>
+              <ToggleGroup
+                type="single"
+                value={theme}
+                onValueChange={(value) =>
+                  value && setTheme(value as "light" | "dark" | "system")
+                }
+              >
                 <ToggleGroupItem value="light" aria-label="Light theme">
                   <Sun className="h-5 w-5 mr-2" />
                   Light
@@ -71,6 +84,23 @@ export default function Settings() {
                 checked={showNoteDates}
                 onCheckedChange={setShowNoteDates}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Keyboard Shortcuts</CardTitle>
+            <CardDescription>Manage your keyboard shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Shortcut for New Note</Label>
+              <Input value="Ctrl + N" readOnly />
+              <Label>Shortcut for Settings</Label>
+              <Input value="Ctrl + ," readOnly />
+              <Label>Shortcut for Command Bar</Label>
+              <Input value="Ctrl + K" readOnly />
             </div>
           </CardContent>
         </Card>
