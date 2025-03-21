@@ -1,35 +1,45 @@
-
-import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Form, FormField, FormItem, FormControl } from '@/components/ui/form';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useForm } from 'react-hook-form';
-import useNoteStore from '@/store/noteStore';
-import useSettingsStore from '@/store/settingsStore';
-import { Folder, Note } from '@/types/notes';
-import { cn } from '@/lib/utils';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { useForm } from "react-hook-form";
+import useNoteStore from "@/store/noteStore";
+import useSettingsStore from "@/store/settingsStore";
+import { Folder, Note } from "@/types/notes";
+import { cn } from "@/lib/utils";
+import {
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
-  File, 
-  FileText, 
+  File,
+  FileText,
   Folder as FolderIcon,
   FolderPlus,
   FolderOpen,
   MoreVertical,
-  Plus, 
-  Search, 
+  Plus,
+  Search,
   Trash2,
   FilePlus,
-  FolderUp
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { 
+  FolderUp,
+} from "lucide-react";
+import { format } from "date-fns";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -38,8 +48,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
-  DropdownMenuSubContent
-} from '@/components/ui/dropdown-menu';
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 
 type NewItemFormValues = {
   name: string;
@@ -47,37 +57,39 @@ type NewItemFormValues = {
 
 export function NoteSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
-  const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<string | null>(null);
-  
+  const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<
+    string | null
+  >(null);
+
   const { showNoteDates } = useSettingsStore();
-  
-  const { 
-    notes, 
-    folders, 
-    activeNoteId, 
+
+  const {
+    notes,
+    folders,
+    activeNoteId,
     expandedFolders,
-    setActiveNoteId, 
-    createNote, 
+    setActiveNoteId,
+    createNote,
     deleteNote,
     createFolder,
     updateFolder,
     deleteFolder,
     toggleFolderExpanded,
-    moveNote
+    moveNote,
   } = useNoteStore();
 
   const form = useForm<NewItemFormValues>({
     defaultValues: {
-      name: ''
-    }
+      name: "",
+    },
   });
 
   // Create root folder if none exists
   useEffect(() => {
     if (folders.length === 0) {
-      createFolder('All Notes', null);
+      createFolder("All Notes", null);
     }
   }, [folders.length, createFolder]);
 
@@ -85,12 +97,12 @@ export function NoteSidebar() {
     setIsCollapsed(!isCollapsed);
   };
 
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredNotes = notes.filter((note) =>
+    note.title.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-  
-  const filteredFolders = folders.filter(folder =>
-    folder.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+  const filteredFolders = folders.filter((folder) =>
+    folder.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleCreateFolder = (data: NewItemFormValues) => {
@@ -101,15 +113,18 @@ export function NoteSidebar() {
 
   // Helper to get all child folder IDs (recursively)
   const getChildFolderIds = (parentId: string | null): string[] => {
-    const directChildren = folders.filter(f => f.parentId === parentId);
+    const directChildren = folders.filter((f) => f.parentId === parentId);
     return [
-      ...directChildren.map(f => f.id),
-      ...directChildren.flatMap(f => getChildFolderIds(f.id))
+      ...directChildren.map((f) => f.id),
+      ...directChildren.flatMap((f) => getChildFolderIds(f.id)),
     ];
   };
 
   // Helper to check if moving a folder would create a cycle
-  const wouldCreateCycle = (folderId: string, targetParentId: string): boolean => {
+  const wouldCreateCycle = (
+    folderId: string,
+    targetParentId: string,
+  ): boolean => {
     if (folderId === targetParentId) return true;
     const childIds = getChildFolderIds(folderId);
     return childIds.includes(targetParentId);
@@ -129,10 +144,12 @@ export function NoteSidebar() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
-          <DropdownMenuItem onClick={() => {
-            setSelectedFolderForNewItem(folder.id);
-            setNewFolderDialogOpen(true);
-          }}>
+          <DropdownMenuItem
+            onClick={() => {
+              setSelectedFolderForNewItem(folder.id);
+              setNewFolderDialogOpen(true);
+            }}
+          >
             <FolderPlus className="mr-2 h-4 w-4" />
             New Folder
           </DropdownMenuItem>
@@ -141,8 +158,8 @@ export function NoteSidebar() {
             New Note
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          
-          {folder.id !== 'root' && (
+
+          {folder.id !== "root" && (
             <>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
@@ -151,18 +168,26 @@ export function NoteSidebar() {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => {
-                      updateFolder(folder.id, { parentId: null });
-                    }}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        updateFolder(folder.id, { parentId: null });
+                      }}
+                    >
                       Root
                     </DropdownMenuItem>
                     {folders
-                      .filter(f => f.id !== folder.id && !wouldCreateCycle(folder.id, f.id))
-                      .map(targetFolder => (
+                      .filter(
+                        (f) =>
+                          f.id !== folder.id &&
+                          !wouldCreateCycle(folder.id, f.id),
+                      )
+                      .map((targetFolder) => (
                         <DropdownMenuItem
                           key={targetFolder.id}
                           onClick={() => {
-                            updateFolder(folder.id, { parentId: targetFolder.id });
+                            updateFolder(folder.id, {
+                              parentId: targetFolder.id,
+                            });
                           }}
                         >
                           {targetFolder.name}
@@ -171,9 +196,9 @@ export function NoteSidebar() {
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
-              
+
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={() => deleteFolder(folder.id)}
               >
@@ -211,7 +236,7 @@ export function NoteSidebar() {
                 <DropdownMenuItem onClick={() => moveNote(note.id, null)}>
                   Root
                 </DropdownMenuItem>
-                {folders.map(folder => (
+                {folders.map((folder) => (
                   <DropdownMenuItem
                     key={folder.id}
                     onClick={() => moveNote(note.id, folder.id)}
@@ -222,9 +247,9 @@ export function NoteSidebar() {
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
-          
+
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
+          <DropdownMenuItem
             className="text-destructive focus:text-destructive"
             onClick={() => deleteNote(note.id)}
           >
@@ -237,30 +262,33 @@ export function NoteSidebar() {
   };
 
   const renderFolderContents = (parentId: string | null) => {
-    const folderNotes = notes.filter(note => note.folderId === parentId);
-    const subfolders = folders.filter(folder => folder.parentId === parentId);
-    
+    const folderNotes = notes.filter((note) => note.folderId === parentId);
+    const subfolders = folders.filter((folder) => folder.parentId === parentId);
+
     return (
       <div className="pl-0">
-        {subfolders.map(folder => renderFolder(folder))}
-        
-        {folderNotes.map(note => (
+        {subfolders.map((folder) => renderFolder(folder))}
+
+        {folderNotes.map((note) => (
           <div
             key={note.id}
             onClick={() => setActiveNoteId(note.id)}
             className={cn(
               "flex items-start rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group note-transition hover:bg-sidebar-accent",
-              activeNoteId === note.id ? "bg-sidebar-accent" : ""
+              activeNoteId === note.id ? "bg-sidebar-accent" : "",
             )}
           >
-            <FileText size={14} className="mr-2 mt-0.5 min-w-4 text-sidebar-foreground" />
+            <FileText
+              size={14}
+              className="mr-2 mt-0.5 min-w-4 text-sidebar-foreground"
+            />
             <div className="overflow-hidden flex-1">
               <h3 className="text-xs font-medium truncate text-sidebar-foreground">
                 {note.title}
               </h3>
               {showNoteDates && (
                 <p className="text-[10px] text-muted-foreground truncate">
-                  {format(new Date(note.updatedAt), 'MMM d, h:mm a')}
+                  {format(new Date(note.updatedAt), "MMM d, h:mm a")}
                 </p>
               )}
             </div>
@@ -273,36 +301,45 @@ export function NoteSidebar() {
 
   const renderFolder = (folder: Folder) => {
     const isExpanded = expandedFolders[folder.id];
-    
+
     return (
       <div key={folder.id} className="mb-1">
-        <Collapsible open={isExpanded} onOpenChange={() => toggleFolderExpanded(folder.id)}>
+        <Collapsible
+          open={isExpanded}
+          onOpenChange={() => toggleFolderExpanded(folder.id)}
+        >
           <div className="flex items-center rounded-md pl-2 pr-1 py-1 cursor-pointer relative group hover:bg-sidebar-accent">
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                <ChevronDown 
-                  size={14} 
+                <ChevronDown
+                  size={14}
                   className={cn(
-                    "transition-transform", 
-                    !isExpanded && "-rotate-90"
-                  )} 
+                    "transition-transform",
+                    !isExpanded && "-rotate-90",
+                  )}
                 />
               </Button>
             </CollapsibleTrigger>
-            
+
             {isExpanded ? (
-              <FolderOpen size={14} className="mr-2 ml-1 text-sidebar-foreground" />
+              <FolderOpen
+                size={14}
+                className="mr-2 ml-1 text-sidebar-foreground"
+              />
             ) : (
-              <FolderIcon size={14} className="mr-2 ml-1 text-sidebar-foreground" />
+              <FolderIcon
+                size={14}
+                className="mr-2 ml-1 text-sidebar-foreground"
+              />
             )}
-            
+
             <span className="text-xs font-medium truncate text-sidebar-foreground flex-1">
               {folder.name}
             </span>
-            
+
             {renderFolderContextMenu(folder)}
           </div>
-          
+
           <CollapsibleContent className="pl-4">
             {renderFolderContents(folder.id)}
           </CollapsibleContent>
@@ -313,10 +350,10 @@ export function NoteSidebar() {
 
   return (
     <>
-      <div 
+      <div
         className={cn(
           "h-screen flex flex-col bg-sidebar border-r border-sidebar-border shadow-sm relative transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-16" : "w-72"
+          isCollapsed ? "w-16" : "w-72",
         )}
       >
         <div className="flex items-center justify-between p-4">
@@ -325,13 +362,17 @@ export function NoteSidebar() {
               Notes
             </h2>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleSidebar}
             className="ml-auto"
           >
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {isCollapsed ? (
+              <ChevronRight size={16} />
+            ) : (
+              <ChevronLeft size={16} />
+            )}
           </Button>
         </div>
 
@@ -356,39 +397,50 @@ export function NoteSidebar() {
               // Search results
               <div>
                 {filteredFolders.length === 0 && filteredNotes.length === 0 ? (
-                  <p className="text-xs text-muted-foreground p-2">No results found</p>
+                  <p className="text-xs text-muted-foreground p-2">
+                    No results found
+                  </p>
                 ) : (
                   <>
-                    {filteredFolders.map(folder => (
-                      <div 
+                    {filteredFolders.map((folder) => (
+                      <div
                         key={folder.id}
                         className="flex items-center rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent"
                         onClick={() => toggleFolderExpanded(folder.id)}
                       >
-                        <FolderIcon size={14} className="mr-2 text-sidebar-foreground" />
+                        <FolderIcon
+                          size={14}
+                          className="mr-2 text-sidebar-foreground"
+                        />
                         <span className="text-xs font-medium truncate text-sidebar-foreground">
                           {folder.name}
                         </span>
                       </div>
                     ))}
-                    
-                    {filteredNotes.map(note => (
+
+                    {filteredNotes.map((note) => (
                       <div
                         key={note.id}
                         onClick={() => setActiveNoteId(note.id)}
                         className={cn(
                           "flex items-start rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent",
-                          activeNoteId === note.id ? "bg-sidebar-accent" : ""
+                          activeNoteId === note.id ? "bg-sidebar-accent" : "",
                         )}
                       >
-                        <FileText size={14} className="mr-2 mt-0.5 text-sidebar-foreground" />
+                        <FileText
+                          size={14}
+                          className="mr-2 mt-0.5 text-sidebar-foreground"
+                        />
                         <div className="overflow-hidden flex-1">
                           <h3 className="text-xs font-medium truncate text-sidebar-foreground">
                             {note.title}
                           </h3>
                           {showNoteDates && (
                             <p className="text-[10px] text-muted-foreground truncate">
-                              {format(new Date(note.updatedAt), 'MMM d, h:mm a')}
+                              {format(
+                                new Date(note.updatedAt),
+                                "MMM d, h:mm a",
+                              )}
                             </p>
                           )}
                         </div>
@@ -400,9 +452,7 @@ export function NoteSidebar() {
               </div>
             ) : (
               // Normal folder structure
-              <>
-                {renderFolderContents(null)}
-              </>
+              <>{renderFolderContents(null)}</>
             )}
           </div>
         </ScrollArea>
@@ -412,13 +462,16 @@ export function NoteSidebar() {
             onClick={() => createNote(null)}
             className={cn(
               "transition-all duration-300 flex-1",
-              isCollapsed ? "w-full p-2 justify-center" : ""
+              isCollapsed ? "w-full p-2 justify-center" : "",
             )}
           >
-            <Plus size={16} className={cn("flex-shrink-0", !isCollapsed && "mr-2")} />
+            <Plus
+              size={16}
+              className={cn("flex-shrink-0", !isCollapsed && "mr-2")}
+            />
             {!isCollapsed && <span>New Note</span>}
           </Button>
-          
+
           {!isCollapsed && (
             <Button
               variant="outline"
@@ -447,20 +500,20 @@ export function NoteSidebar() {
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Input 
-                        placeholder="Folder name" 
-                        {...field} 
-                        autoFocus 
-                      />
+                      <Input placeholder="Folder name" {...field} autoFocus />
                     </FormControl>
                   </FormItem>
                 )}
               />
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => {
-                  setNewFolderDialogOpen(false);
-                  form.reset();
-                }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setNewFolderDialogOpen(false);
+                    form.reset();
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button type="submit">Create</Button>

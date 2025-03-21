@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createElement } from "react";
 import { useNavigate } from "react-router-dom";
+import { Calendar, Monitor } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -8,33 +9,28 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from "@/components/ui/command";
-import {
-  FileText,
-  Search,
-  Settings,
-  File,
-  FolderPlus,
-  FilePlus,
-  Moon,
-  Sun,
-  Monitor,
-} from "lucide-react";
+import { FileText, File, FolderPlus, FilePlus, Icon } from "lucide-react";
 import useNoteStore from "@/store/noteStore";
-import useSettingsStore from "@/store/settingsStore";
+import { settings, useSettingsStore } from "@/store/settingsStore";
+import { SettingType } from "@/types/settings";
 import { toast } from "sonner";
+import { Toggle } from "./ui/toggle";
+import { Box } from "framer-motion";
+import { Switch } from "@radix-ui/react-switch";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
-  const [currentSubmenu, setCurrentSubmenu] = useState(null);
+  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(
+    null,
+  );
   const navigate = useNavigate();
 
   const { notes, folders, setActiveNoteId, createNote, createFolder } =
     useNoteStore();
-  const { theme, setTheme, showNoteDates, setShowNoteDates } =
-    useSettingsStore();
+  const { getSetting, setSetting } = useSettingsStore();
 
-  // Setup keyboard shortcut listener
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -52,37 +48,15 @@ export function CommandBar() {
     setOpen(false);
   };
 
-  // Get all note titles for search
-  const noteItems = notes.map((note) => ({
-    id: note.id,
-    name: note.title,
-    type: "note",
-  }));
-
-  // Get all folder names for search
   const folderItems = folders.map((folder) => ({
     id: folder.id,
-    name: folder.name,
+    name: folder.id,
     type: "folder",
   }));
 
-  // Combined searchable items
-  const searchableItems = [...noteItems, ...folderItems];
-
-  const settingsCommands = [
-    { name: "Theme", options: ["light", "dark", "system"] },
-    { name: "Show Note Dates", options: ["true", "false"] },
-    // Add more settings as needed
-  ];
-
-  const handleCommandSelection = (commandName: string) => {
-    const command = settingsCommands.find((cmd) => cmd.name === commandName);
-    if (command) {
-      // Open command dialog to show options for the selected command
-      setOpen(true);
-      // Set the current command to display its options
-      setCurrentSubmenu(command);
-    }
+  const handleCommandSelection = (commandName: SettingType) => {
+    setCurrentSubmenu(commandName); // Open submenu directly
+    setOpen(false);
   };
 
   return (
@@ -93,7 +67,7 @@ export function CommandBar() {
           <CommandEmpty>No results found.</CommandEmpty>
 
           <CommandGroup heading="Notes">
-            {noteItems.slice(0, 5).map((note) => (
+            {notes.slice(0, 5).map((note) => (
               <CommandItem
                 key={note.id}
                 onSelect={() =>
@@ -104,8 +78,10 @@ export function CommandBar() {
                 }
               >
                 <FileText className="mr-2 h-4 w-4" />
-                <span>{note.name}</span>
-                <span className="hidden">{note.id}</span>
+                <span>{note.title}</span>
+                <span className="ml-auto text-xs text-muted-foreground">
+                  {note.createdAt}
+                </span>
               </CommandItem>
             ))}
             <CommandItem
@@ -133,12 +109,12 @@ export function CommandBar() {
                   onSelect={() =>
                     runCommand(() => {
                       createNote(folder.id);
-                      toast(`New note created in ${folder.name}`);
+                      toast(`New note created in ${folder.id}`);
                     })
                   }
                 >
                   <FolderPlus className="mr-2 h-4 w-4" />
-                  <span>New note in {folder.name}</span>
+                  <span>New note in {folder.id}</span>
                 </CommandItem>
               ))}
             <CommandItem
@@ -158,55 +134,61 @@ export function CommandBar() {
           <CommandSeparator />
 
           <CommandGroup heading="Settings">
-            {settingsCommands.map((command) => (
-              <CommandItem
-                key={command.name}
-                onSelect={() => handleCommandSelection(command.name)}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                <span>{command.name}</span>
-              </CommandItem>
-            ))}
+            {settings
+              .filter((s) => s.type === "select")
+              .map((setting) => (
+                <CommandItem
+                  key={setting.id}
+                  onSelect={() => handleCommandSelection(setting)}
+                >
+                  <setting.icon className="mr-2 h-4 w-4" />
+                  <span>{setting.name}</span>
+                </CommandItem>
+              ))}
+            {settings
+              .filter((s) => s.type === "toggle")
+              .map((setting) => (
+                <CommandItem
+                  key={setting.id}
+                  onSelect={() => {
+                    setSetting(setting.id, !getSetting(setting.id));
+                    setOpen(false);
+                  }}
+                >
+                  <setting.icon className="mr-2 h-4 w-4" />
+                  <span>Toggle {setting.name}</span>
+                  <CommandShortcut>
+                    {getSetting(setting.id) ? "On" : "Off"}
+                  </CommandShortcut>
+                </CommandItem>
+              ))}
           </CommandGroup>
-
-          <CommandSeparator />
         </CommandList>
       </CommandDialog>
+
+      {/* Submenu for settings */}
       <CommandDialog
-        open={currentSubmenu !== null}
+        open={!!currentSubmenu}
         onOpenChange={() => setCurrentSubmenu(null)}
       >
-        <CommandInput placeholder="Select an option or type..." />
+        <CommandInput placeholder="Select an option..." />
         <CommandList>
-          {currentSubmenu && (
-            <CommandGroup heading={currentSubmenu.name}>
-              {currentSubmenu.options.map((option) => (
+          <CommandGroup heading={currentSubmenu?.name}>
+            {currentSubmenu?.type === "select" &&
+              currentSubmenu.options.map((option) => (
                 <CommandItem
                   key={option}
                   onSelect={() =>
                     runCommand(() => {
-                      if (currentSubmenu.name === "Theme") {
-                        setTheme(option as "light" | "dark" | "system");
-                        toast(
-                          `${option.charAt(0).toUpperCase() + option.slice(1)} theme activated`,
-                        );
-                      } else if (currentSubmenu.name === "Show Note Dates") {
-                        setShowNoteDates(option === "true");
-                        toast(
-                          `Note dates ${option === "true" ? "shown" : "hidden"}`,
-                        );
-                      }
+                      setSetting(currentSubmenu.id, option);
+                      toast(`${currentSubmenu.name} set to ${option}`);
                     })
                   }
                 >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>
-                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                  </span>
+                  <span>{option}</span>
                 </CommandItem>
               ))}
-            </CommandGroup>
-          )}
+          </CommandGroup>
         </CommandList>
       </CommandDialog>
     </>

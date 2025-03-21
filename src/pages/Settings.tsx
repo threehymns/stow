@@ -2,21 +2,20 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
+  CardDescription,
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input"; // Added import for Input component
-import { ArrowLeft, Moon, Sun, Monitor } from "lucide-react";
+import { ArrowLeft, LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import useSettingsStore from "@/store/settingsStore";
+import { settings, useSettingsStore } from "@/store/settingsStore";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Sun, Moon, Monitor, Icon } from "lucide-react";
 
 export default function Settings() {
-  const { theme, showNoteDates, setTheme, setShowNoteDates } =
-    useSettingsStore();
+  const { setSetting, getSetting, theme, showNoteDates } = useSettingsStore();
 
   return (
     <div className="h-screen flex flex-col p-4 md:p-8 max-w-4xl mx-auto animate-fade-in">
@@ -30,80 +29,73 @@ export default function Settings() {
       </div>
 
       <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>
-              Customize how the application looks
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>Theme</Label>
-              <ToggleGroup
-                type="single"
-                value={theme}
-                onValueChange={(value) =>
-                  value && setTheme(value as "light" | "dark" | "system")
-                }
-              >
-                <ToggleGroupItem value="light" aria-label="Light theme">
-                  <Sun className="h-5 w-5 mr-2" />
-                  Light
-                </ToggleGroupItem>
-                <ToggleGroupItem value="dark" aria-label="Dark theme">
-                  <Moon className="h-5 w-5 mr-2" />
-                  Dark
-                </ToggleGroupItem>
-                <ToggleGroupItem value="system" aria-label="System theme">
-                  <Monitor className="h-5 w-5 mr-2" />
-                  System
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-          </CardContent>
-        </Card>
+        {settings.map((setting) => (
+          <Card key={setting.id}>
+            <CardHeader>
+              <CardTitle>{setting.name}</CardTitle>
+              <CardDescription>
+                {/* Add descriptions for each setting if needed */}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {setting.type === "select" && (
+                <div className="space-y-2">
+                  <Label>{setting.name}</Label>
+                  <ToggleGroup
+                    type="single"
+                    value={getSetting(setting.id).toString()}
+                    onValueChange={(value) =>
+                      value && setSetting(setting.id, value)
+                    }
+                  >
+                    {setting.options.map((option) => {
+                      let icon: React.ReactNode;
+                      if (setting.id === "theme") {
+                        if (option === "light") {
+                          icon = <Sun className="h-5 w-5 mr-2" />;
+                        } else if (option === "dark") {
+                          icon = <Moon className="h-5 w-5 mr-2" />;
+                        } else {
+                          icon = <Monitor className="h-5 w-5 mr-2" />;
+                        }
+                      }
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Interface</CardTitle>
-            <CardDescription>
-              Control how notes and folders are displayed
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="show-dates">Show note dates</Label>
-                <p className="text-sm text-muted-foreground">
-                  Display modification dates under note titles in the sidebar
-                </p>
-              </div>
-              <Switch
-                id="show-dates"
-                checked={showNoteDates}
-                onCheckedChange={setShowNoteDates}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Keyboard Shortcuts</CardTitle>
-            <CardDescription>Manage your keyboard shortcuts</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>Shortcut for New Note</Label>
-              <Input value="Ctrl + N" readOnly />
-              <Label>Shortcut for Settings</Label>
-              <Input value="Ctrl + ," readOnly />
-              <Label>Shortcut for Command Bar</Label>
-              <Input value="Ctrl + K" readOnly />
-            </div>
-          </CardContent>
-        </Card>
+                      return (
+                        <ToggleGroupItem
+                          key={option}
+                          value={option}
+                          aria-label={`${option} option`}
+                        >
+                          {icon}
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </ToggleGroupItem>
+                      );
+                    })}
+                  </ToggleGroup>
+                </div>
+              )}
+              {setting.type === "toggle" && (
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor={`toggle-${setting.id}`}>
+                      {setting.name}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {/* Add specific descriptions here */}
+                    </p>
+                  </div>
+                  <Switch
+                    id={`toggle-${setting.id}`}
+                    checked={getSetting(setting.id) as boolean}
+                    onCheckedChange={(checked) =>
+                      setSetting(setting.id, checked)
+                    }
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

@@ -1,33 +1,59 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { Sun, Moon, Monitor, Calendar, LucideIcon } from "lucide-react";
+import { SettingType } from "../types/settings";
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+export const settings: SettingType[] = [
+  {
+    name: "Theme",
+    id: "theme",
+    type: "select",
+    initialValue: "system",
+    icon: Sun,
+    options: ["light", "dark", "system"],
+  },
+  {
+    name: "Show Note Dates",
+    id: "showNoteDates",
+    type: "toggle",
+    initialValue: true,
+    icon: Calendar,
+  },
+];
 
-interface SettingsState {
-  // Theme settings
-  theme: 'light' | 'dark' | 'system';
-  // UI settings
-  showNoteDates: boolean;
-  
-  // Actions
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
-  setShowNoteDates: (show: boolean) => void;
-}
+type SettingsState = {
+  settingsConfig: SettingType[];
+  setSetting: (settingId: string, value: any) => void;
+  getSetting: (settingId: string) => string | boolean;
+} & {
+  [setting in (typeof settings)[number] as setting["id"]]: setting["initialValue"];
+};
 
-const useSettingsStore = create<SettingsState>()(
+export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
-      // Default settings
-      theme: 'system',
-      showNoteDates: true,
-      
-      // Actions
-      setTheme: (theme) => set({ theme }),
-      setShowNoteDates: (show) => set({ showNoteDates: show }),
-    }),
+    (set, get) => {
+      const initialState = settings.reduce<Record<string, string | boolean>>(
+        (acc, setting) => {
+          acc[setting.id] = setting.initialValue;
+          return acc;
+        },
+        {},
+      );
+
+      return {
+        ...initialState,
+        settingsConfig: settings,
+        setSetting: (settingId, value) =>
+          set((state) => {
+            return { [settingId]: value };
+          }),
+        getSetting: (settingId) => get()[settingId],
+      } as SettingsState;
+    },
     {
-      name: 'markdown-notes-settings',
-    }
-  )
+      name: "settings-storage",
+    },
+  ),
 );
 
 export default useSettingsStore;
