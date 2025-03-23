@@ -1,6 +1,6 @@
-import { useState, useEffect, createElement } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Monitor } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -11,25 +11,19 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { FileText, File, FolderPlus, FilePlus, Icon } from "lucide-react";
+import { FileText, FolderPlus, FilePlus } from "lucide-react";
 import useNoteStore from "@/store/noteStore";
-import { settings, useSettingsStore } from "@/store/settingsStore";
+import { settings, useSettingsStore, settingsCategories } from "@/store/settingsStore";
 import { SettingType } from "@/types/settings";
 import { toast } from "sonner";
-import { Toggle } from "./ui/toggle";
-import { Box } from "framer-motion";
-import { Switch } from "@radix-ui/react-switch";
 import { format } from "date-fns";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
-  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(
-    null,
-  );
+  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(null);
   const navigate = useNavigate();
 
-  const { notes, folders, setActiveNoteId, createNote, createFolder } =
-    useNoteStore();
+  const { notes, folders, setActiveNoteId, createNote, createFolder } = useNoteStore();
   const { getSetting, setSetting } = useSettingsStore();
 
   useEffect(() => {
@@ -50,9 +44,21 @@ export function CommandBar() {
   };
 
   const handleCommandSelection = (commandName: SettingType) => {
-    setCurrentSubmenu(commandName); // Open submenu directly
+    setCurrentSubmenu(commandName);
     setOpen(false);
   };
+
+  // Group settings by category
+  const groupedSettings = settings.reduce((acc, setting) => {
+    if (!acc[setting.category]) {
+      acc[setting.category] = {
+        category: settingsCategories.find(cat => cat.id === setting.category),
+        settings: []
+      };
+    }
+    acc[setting.category].settings.push(setting);
+    return acc;
+  }, {} as Record<string, { category: any; settings: SettingType[] }>);
 
   return (
     <>
@@ -130,34 +136,38 @@ export function CommandBar() {
           <CommandSeparator />
 
           <CommandGroup heading="Settings">
-            {settings
-              .filter((s) => s.type === "select")
-              .map((setting) => (
-                <CommandItem
-                  key={setting.id}
-                  onSelect={() => handleCommandSelection(setting)}
-                >
-                  <setting.icon className="mr-2 h-4 w-4" />
-                  <span>{setting.name}</span>
-                </CommandItem>
-              ))}
-            {settings
-              .filter((s) => s.type === "toggle")
-              .map((setting) => (
-                <CommandItem
-                  key={setting.id}
-                  onSelect={() => {
-                    setSetting(setting.id, !getSetting(setting.id));
-                    setOpen(false);
-                  }}
-                >
-                  <setting.icon className="mr-2 h-4 w-4" />
-                  <span>Toggle {setting.name}</span>
-                  <CommandShortcut>
-                    {getSetting(setting.id) ? "On" : "Off"}
-                  </CommandShortcut>
-                </CommandItem>
-              ))}
+            {Object.entries(groupedSettings).map(([categoryId, category]) => (
+              <CommandGroup key={categoryId} heading={category.category?.name || categoryId}>
+                {category.settings
+                  .filter((s) => s.type === "select")
+                  .map((setting) => (
+                    <CommandItem
+                      key={setting.id}
+                      onSelect={() => handleCommandSelection(setting)}
+                    >
+                      {setting.icon && <setting.icon className="mr-2 h-4 w-4" />}
+                      <span>{setting.name}</span>
+                    </CommandItem>
+                  ))}
+                {category.settings
+                  .filter((s) => s.type === "toggle")
+                  .map((setting) => (
+                    <CommandItem
+                      key={setting.id}
+                      onSelect={() => {
+                        setSetting(setting.id, !getSetting(setting.id));
+                        setOpen(false);
+                      }}
+                    >
+                      {setting.icon && <setting.icon className="mr-2 h-4 w-4" />}
+                      <span>Toggle {setting.name}</span>
+                      <CommandShortcut>
+                        {getSetting(setting.id) ? "On" : "Off"}
+                      </CommandShortcut>
+                    </CommandItem>
+                  ))}
+              </CommandGroup>
+            ))}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

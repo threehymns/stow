@@ -1,7 +1,23 @@
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Sun, Moon, Monitor, Calendar, LucideIcon } from "lucide-react";
-import { SettingType } from "../types/settings";
+import { Sun, Moon, Monitor, Calendar, Settings, Layout, Eye } from "lucide-react";
+import { SettingCategory, SettingType } from "../types/settings";
+
+export const settingsCategories: SettingCategory[] = [
+  {
+    id: "appearance",
+    name: "Appearance",
+    description: "Customize how the application looks",
+    icon: Layout,
+  },
+  {
+    id: "display",
+    name: "Display",
+    description: "Control what information is displayed",
+    icon: Eye,
+  },
+];
 
 export const settings: SettingType[] = [
   {
@@ -11,6 +27,8 @@ export const settings: SettingType[] = [
     initialValue: "system",
     icon: Sun,
     options: ["light", "dark", "system"],
+    category: "appearance",
+    description: "Control the application's color theme",
   },
   {
     name: "Show Note Dates",
@@ -18,11 +36,14 @@ export const settings: SettingType[] = [
     type: "toggle",
     initialValue: true,
     icon: Calendar,
+    category: "display",
+    description: "Show creation dates under note titles in the sidebar",
   },
 ];
 
 type SettingsState = {
   settingsConfig: SettingType[];
+  settingsCategories: SettingCategory[];
   setSetting: (settingId: string, value: any) => void;
   getSetting: (settingId: string) => string | boolean;
 } & {
@@ -43,6 +64,7 @@ export const useSettingsStore = create<SettingsState>()(
       return {
         ...initialState,
         settingsConfig: settings,
+        settingsCategories,
         setSetting: (settingId, value) =>
           set((state) => {
             return { [settingId]: value };
