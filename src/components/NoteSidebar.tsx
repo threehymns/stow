@@ -37,6 +37,8 @@ import {
   Trash2,
   FilePlus,
   FolderUp,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -86,13 +88,6 @@ export function NoteSidebar() {
     },
   });
 
-  // Create root folder if none exists
-  useEffect(() => {
-    if (folders.length === 0) {
-      createFolder("All Notes", null);
-    }
-  }, [folders.length, createFolder]);
-
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -130,14 +125,14 @@ export function NoteSidebar() {
     return childIds.includes(targetParentId);
   };
 
-  const renderFolderContextMenu = (folder: Folder) => {
+  const FolderContextMenu = (folder: Folder) => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0 absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-6 w-6 p-0 absolute right-2 opacity-0 group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical size={14} />
@@ -173,7 +168,7 @@ export function NoteSidebar() {
                         updateFolder(folder.id, { parentId: null });
                       }}
                     >
-                      Root
+                      All Notes
                     </DropdownMenuItem>
                     {folders
                       .filter(
@@ -212,14 +207,14 @@ export function NoteSidebar() {
     );
   };
 
-  const renderNoteContextMenu = (note: Note) => {
+  const NoteContextMenu = (note: Note) => {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0 absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-4 w-6 p-0 opacity-0 group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical size={14} />
@@ -234,7 +229,7 @@ export function NoteSidebar() {
             <DropdownMenuPortal>
               <DropdownMenuSubContent>
                 <DropdownMenuItem onClick={() => moveNote(note.id, null)}>
-                  Root
+                  All Notes
                 </DropdownMenuItem>
                 {folders.map((folder) => (
                   <DropdownMenuItem
@@ -261,20 +256,21 @@ export function NoteSidebar() {
     );
   };
 
-  const renderFolderContents = (parentId: string | null) => {
+  const FolderContents = (parentId: string | null) => {
     const folderNotes = notes.filter((note) => note.folderId === parentId);
     const subfolders = folders.filter((folder) => folder.parentId === parentId);
 
     return (
       <div className="pl-0">
-        {subfolders.map((folder) => renderFolder(folder))}
+        {subfolders.map((folder) => Folder(folder))}
 
         {folderNotes.map((note) => (
           <div
             key={note.id}
+            onMouseDown={() => setActiveNoteId(note.id)}
             onClick={() => setActiveNoteId(note.id)}
             className={cn(
-              "flex items-start rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group note-transition hover:bg-sidebar-accent",
+              "flex items-start rounded-md pl-2 pr-1 py-2 cursor-pointer relative group hover:bg-sidebar-accent",
               activeNoteId === note.id ? "bg-sidebar-accent" : "",
             )}
           >
@@ -292,25 +288,29 @@ export function NoteSidebar() {
                 </p>
               )}
             </div>
-            {renderNoteContextMenu(note)}
+            {NoteContextMenu(note)}
           </div>
         ))}
       </div>
     );
   };
 
-  const renderFolder = (folder: Folder) => {
+  const Folder = (folder: Folder) => {
     const isExpanded = expandedFolders[folder.id];
 
     return (
-      <div key={folder.id} className="mb-1">
+      <div key={folder.id}>
         <Collapsible
           open={isExpanded}
           onOpenChange={() => toggleFolderExpanded(folder.id)}
         >
-          <div className="flex items-center rounded-md pl-2 pr-1 py-1 cursor-pointer relative group hover:bg-sidebar-accent">
+          <div className="flex items-center rounded-md pl-2 pr-1 cursor-pointer relative group hover:bg-sidebar-accent">
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 transition-none"
+              >
                 <ChevronDown
                   size={14}
                   className={cn(
@@ -321,27 +321,29 @@ export function NoteSidebar() {
               </Button>
             </CollapsibleTrigger>
 
-            {isExpanded ? (
-              <FolderOpen
-                size={14}
-                className="mr-2 ml-1 text-sidebar-foreground"
-              />
-            ) : (
-              <FolderIcon
-                size={14}
-                className="mr-2 ml-1 text-sidebar-foreground"
-              />
-            )}
+            <CollapsibleTrigger asChild>
+              {isExpanded ? (
+                <FolderOpen
+                  size={14}
+                  className="mr-2 ml-1 text-sidebar-foreground"
+                />
+              ) : (
+                <FolderIcon
+                  size={14}
+                  className="mr-2 ml-1 text-sidebar-foreground"
+                />
+              )}
+            </CollapsibleTrigger>
+            <CollapsibleTrigger asChild>
+              <span className="py-2 text-xs font-medium truncate text-sidebar-foreground flex-1">
+                {folder.name}
+              </span>
+            </CollapsibleTrigger>
 
-            <span className="text-xs font-medium truncate text-sidebar-foreground flex-1">
-              {folder.name}
-            </span>
-
-            {renderFolderContextMenu(folder)}
+            {FolderContextMenu(folder)}
           </div>
-
           <CollapsibleContent className="pl-4">
-            {renderFolderContents(folder.id)}
+            {FolderContents(folder.id)}
           </CollapsibleContent>
         </Collapsible>
       </div>
@@ -352,41 +354,78 @@ export function NoteSidebar() {
     <>
       <div
         className={cn(
-          "h-screen flex flex-col bg-sidebar border-r border-sidebar-border shadow-sm relative transition-all duration-300 ease-in-out",
+          "h-screen flex flex-col bg-sidebar border-r border-sidebar-border shadow-sm relative transition-all duration-300 ease-in-out select-none",
           isCollapsed ? "w-16" : "w-72",
         )}
       >
-        <div className="flex items-center justify-between p-4">
+        <div
+          className={cn(
+            "flex items-center pt-4 justify-center",
+            !isCollapsed && "justify-between",
+          )}
+        >
           {!isCollapsed && (
-            <h2 className="text-lg font-semibold text-sidebar-foreground animate-slide-in">
-              Notes
+            <h2 className="mx-4 text-sm font-semibold text-sidebar-foreground animate-slide-in">
+              MarkdownHive
             </h2>
           )}
           <Button
             variant="ghost"
             size="icon"
+            onMouseDown={toggleSidebar}
             onClick={toggleSidebar}
-            className="ml-auto"
+            className={cn("ml-auto", isCollapsed ? "mx-3" : "mx-4")}
           >
-            {isCollapsed ? (
-              <ChevronRight size={16} />
-            ) : (
-              <ChevronLeft size={16} />
-            )}
+            {isCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
         </div>
 
-        <div className={cn("p-4", isCollapsed && "hidden")}>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
+        <div
+          className={cn(
+            "flex justify-center py-2",
+            !isCollapsed && "px-4 space-x-1",
+          )}
+        >
+          <div
+            className={cn("relative animate-slide-in", isCollapsed && "hidden")}
+          >
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
               placeholder="Search notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 py-2 bg-sidebar-accent text-sidebar-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-sidebar-ring"
+              className="pl-9"
             />
           </div>
+          {!isCollapsed && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setSelectedFolderForNewItem(null);
+                setNewFolderDialogOpen(true);
+              }}
+              className="animate-slide-in shrink-0"
+            >
+              <FolderPlus />
+              <span className="sr-only">New Folder</span>
+            </Button>
+          )}
+          <Button
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                createNote(null);
+                e.preventDefault();
+              }
+            }}
+            onMouseDown={() => createNote(null)}
+            size="icon"
+            variant="outline"
+            className="shrink-0"
+          >
+            <Plus />
+            <span className="sr-only">New Note</span>
+          </Button>
         </div>
 
         <Separator className="my-1" />
@@ -407,6 +446,7 @@ export function NoteSidebar() {
                         key={folder.id}
                         className="flex items-center rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent"
                         onClick={() => toggleFolderExpanded(folder.id)}
+                        onMouseDown={() => toggleFolderExpanded(folder.id)}
                       >
                         <FolderIcon
                           size={14}
@@ -422,8 +462,9 @@ export function NoteSidebar() {
                       <div
                         key={note.id}
                         onClick={() => setActiveNoteId(note.id)}
+                        onMouseDown={() => setActiveNoteId(note.id)}
                         className={cn(
-                          "flex items-start rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent",
+                          "flex items-start rounded-md pl-2 pr-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent",
                           activeNoteId === note.id ? "bg-sidebar-accent" : "",
                         )}
                       >
@@ -432,7 +473,7 @@ export function NoteSidebar() {
                           className="mr-2 mt-0.5 text-sidebar-foreground"
                         />
                         <div className="overflow-hidden flex-1">
-                          <h3 className="text-xs font-medium truncate text-sidebar-foreground">
+                          <h3 className="py-2 text-xs font-medium truncate text-sidebar-foreground">
                             {note.title}
                           </h3>
                           {showNoteDates && (
@@ -444,7 +485,7 @@ export function NoteSidebar() {
                             </p>
                           )}
                         </div>
-                        {renderNoteContextMenu(note)}
+                        {NoteContextMenu(note)}
                       </div>
                     ))}
                   </>
@@ -452,39 +493,10 @@ export function NoteSidebar() {
               </div>
             ) : (
               // Normal folder structure
-              <>{renderFolderContents(null)}</>
+              <>{FolderContents(null)}</>
             )}
           </div>
         </ScrollArea>
-
-        <div className="p-4 flex space-x-2">
-          <Button
-            onClick={() => createNote(null)}
-            className={cn(
-              "transition-all duration-300 flex-1",
-              isCollapsed ? "w-full p-2 justify-center" : "",
-            )}
-          >
-            <Plus
-              size={16}
-              className={cn("flex-shrink-0", !isCollapsed && "mr-2")}
-            />
-            {!isCollapsed && <span>New Note</span>}
-          </Button>
-
-          {!isCollapsed && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedFolderForNewItem(null);
-                setNewFolderDialogOpen(true);
-              }}
-            >
-              <FolderPlus size={16} className="mr-2" />
-              <span>New Folder</span>
-            </Button>
-          )}
-        </div>
       </div>
 
       <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>

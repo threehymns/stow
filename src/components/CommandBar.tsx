@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { Toggle } from "./ui/toggle";
 import { Box } from "framer-motion";
 import { Switch } from "@radix-ui/react-switch";
+import { format } from "date-fns";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
@@ -48,12 +49,6 @@ export function CommandBar() {
     setOpen(false);
   };
 
-  const folderItems = folders.map((folder) => ({
-    id: folder.id,
-    name: folder.id,
-    type: "folder",
-  }));
-
   const handleCommandSelection = (commandName: SettingType) => {
     setCurrentSubmenu(commandName); // Open submenu directly
     setOpen(false);
@@ -79,8 +74,9 @@ export function CommandBar() {
               >
                 <FileText className="mr-2 h-4 w-4" />
                 <span>{note.title}</span>
+                <span className="hidden">{note.id}</span>
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {note.createdAt}
+                  {format(new Date(note.createdAt), "MMM d, h:mm a")}
                 </span>
               </CommandItem>
             ))}
@@ -100,7 +96,7 @@ export function CommandBar() {
           <CommandSeparator />
 
           <CommandGroup heading="Folders">
-            {folderItems
+            {folders
               .filter((f) => f.id !== "root")
               .slice(0, 3)
               .map((folder) => (
@@ -109,12 +105,12 @@ export function CommandBar() {
                   onSelect={() =>
                     runCommand(() => {
                       createNote(folder.id);
-                      toast(`New note created in ${folder.id}`);
+                      toast(`New note created in ${folder.name}`);
                     })
                   }
                 >
                   <FolderPlus className="mr-2 h-4 w-4" />
-                  <span>New note in {folder.id}</span>
+                  <span>New note in {folder.name}</span>
                 </CommandItem>
               ))}
             <CommandItem

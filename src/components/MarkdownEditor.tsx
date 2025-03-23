@@ -22,7 +22,7 @@ import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function MarkdownEditor() {
-  const { notes, activeNoteId, updateNote } = useNoteStore();
+  const { notes, activeNoteId, updateNote, setActiveNoteId } = useNoteStore();
   const activeNote = notes.find((note) => note.id === activeNoteId);
 
   const [title, setTitle] = useState("");
@@ -33,9 +33,9 @@ export function MarkdownEditor() {
       setTitle(activeNote.title);
       setIsInitialized(true);
     } else {
-      setTitle("");
+      setActiveNoteId(null);
     }
-  }, [activeNote]);
+  }, [activeNote, activeNoteId]);
 
   const editor = useEditor({
     extensions: [
@@ -123,16 +123,19 @@ export function MarkdownEditor() {
               value={title}
               onChange={handleTitleChange}
               placeholder="Untitled Note"
-              className="border-0 px-0 text-2xl font-semibold focus-visible:ring-0 leading-relaxed"
+              className="border-0 p-0 md:text-2xl font-semibold focus-visible:ring-0 focus-visible:ring-secondary leading-relaxed"
             />
           </div>
 
-          <div className="px-6 pb-2">
+          <div className="px-6 pb-2 max-w-prose mx-auto">
             <EditorToolbar editor={editor} />
           </div>
 
-          <div className="flex-1 px-6 py-4 overflow-auto">
-            <EditorContent editor={editor} className="min-h-full" />
+          <div className="flex-1 px-6 py-4 overflow-auto" onClick={() => editor.chain().focus()}>
+            <EditorContent
+              editor={editor}
+              className="min-h-full max-w-prose mx-auto pb-96"
+            />
           </div>
         </motion.div>
       </AnimatePresence>

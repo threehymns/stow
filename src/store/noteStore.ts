@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
 import { Note, Folder } from "@/types/notes";
+import { toast } from "@/hooks/use-toast";
 
 interface NoteState {
   notes: Note[];
@@ -24,191 +25,207 @@ interface NoteState {
 
 // Helper to create a root folder if none exists
 const createRootFolderIfNeeded = (folders: Folder[]): Folder[] => {
-  if (folders.length === 0) {
-    const now = new Date().toISOString();
-    return [
-      {
-        id: "root",
-        name: "All Notes",
-        createdAt: now,
-        parentId: null,
-      },
-    ];
-  }
+  // if (folders.length === 0) {
+  //   const now = new Date().toISOString();
+  //   return [
+  //     {
+  //       id: "root",
+  //       name: "All Notes",
+  //       createdAt: now,
+  //       parentId: null,
+  //     },
+  //   ];
+  // }
   return folders;
 };
 
 const useNoteStore = create<NoteState>()(
   persist(
-    (set, get) => ({
-      notes: [],
-      folders: [],
-      activeNoteId: null,
-      expandedFolders: { root: true }, // Root folder is expanded by default
+    (set, get) => {
+      const now = new Date().toISOString();
+      const defaultNote: Note = {
+        id: nanoid(),
+        title: "Untitled Note",
+        content: "",
+        createdAt: now,
+        updatedAt: now,
+        folderId: null,
+      };
 
-      setActiveNoteId: (id) => {
-        set({ activeNoteId: id });
-      },
+      return {
+        notes: [defaultNote],
+        folders: [],
+        activeNoteId: defaultNote.id,
+        expandedFolders: { root: true }, // Root folder is expanded by default
 
-      createNote: (folderId = null) => {
-        const now = new Date().toISOString();
-        const newNote: Note = {
-          id: nanoid(),
-          title: "Untitled Note",
-          content: "",
-          createdAt: now,
-          updatedAt: now,
-          folderId: folderId,
-        };
+        setActiveNoteId: (id) => {
+          set({ activeNoteId: id });
+        },
 
-        set((state) => ({
-          notes: [newNote, ...state.notes],
-          activeNoteId: newNote.id,
-        }));
-      },
-
-      updateNote: (id, data) => {
-        set((state) => ({
-          notes: state.notes.map((note) =>
-            note.id === id
-              ? {
-                  ...note,
-                  ...data,
-                  updatedAt: new Date().toISOString(),
-                }
-              : note,
-          ),
-        }));
-      },
-
-      deleteNote: (id) => {
-        const { notes, activeNoteId } = get();
-        const filteredNotes = notes.filter((note) => note.id !== id);
-
-        set({
-          notes: filteredNotes,
-          activeNoteId:
-            activeNoteId === id
-              ? filteredNotes.length > 0
-                ? filteredNotes[0].id
-                : null
-              : activeNoteId,
-        });
-      },
-
-      moveNote: (noteId, folderId) => {
-        set((state) => ({
-          notes: state.notes.map((note) =>
-            note.id === noteId
-              ? { ...note, folderId, updatedAt: new Date().toISOString() }
-              : note,
-          ),
-        }));
-      },
-
-      createFolder: (name, parentId = null) => {
-        const now = new Date().toISOString();
-        const newFolder: Folder = {
-          id: nanoid(),
-          name,
-          createdAt: now,
-          parentId,
-        };
-
-        set((state) => {
-          // Ensure we have a root folder
-          const updatedFolders = createRootFolderIfNeeded([
-            ...state.folders,
-            newFolder,
-          ]);
-
-          return {
-            folders: updatedFolders,
-            expandedFolders: {
-              ...state.expandedFolders,
-              [parentId || "root"]: true, // Auto-expand parent folder
-            },
+        createNote: (folderId = null) => {
+          const newNote: Note = {
+            id: nanoid(),
+            title: "Untitled Note",
+            content: "",
+            createdAt: now,
+            updatedAt: now,
+            folderId: folderId,
           };
-        });
 
-        return newFolder.id;
-      },
+          set((state) => ({
+            notes: [newNote, ...state.notes],
+            activeNoteId: newNote.id,
+          }));
+        },
 
-      updateFolder: (id, data) => {
-        set((state) => ({
-          folders: state.folders.map((folder) =>
-            folder.id === id ? { ...folder, ...data } : folder,
-          ),
-        }));
-      },
+        updateNote: (id, data) => {
+          set((state) => ({
+            notes: state.notes.map((note) =>
+              note.id === id
+                ? {
+                    ...note,
+                    ...data,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : note,
+            ),
+          }));
+        },
 
-      deleteFolder: (id) => {
-        // Get all subfolders recursively
-        const getAllSubfolderIds = (folderId: string): string[] => {
-          const { folders } = get();
-          const directSubfolders = folders.filter(
-            (f) => f.parentId === folderId,
-          );
-          return [
-            folderId,
-            ...directSubfolders.flatMap((sf) => getAllSubfolderIds(sf.id)),
-          ];
-        };
+        deleteNote: (id) => {
+          const { notes, activeNoteId } = get();
+          const filteredNotes = notes.filter((note) => note.id !== id);
+          const note = notes.find((note) => note.id === id);
 
-        const folderIdsToRemove = getAllSubfolderIds(id);
+          set({
+            notes: filteredNotes,
+            activeNoteId:
+              activeNoteId === id
+                ? filteredNotes.length > 0
+                  ? filteredNotes[0].id
+                  : null
+                : activeNoteId,
+          });
+          toast({
+            title: "Note deleted",
+            description: `Successfully deleted "${note.title}"`,
+            variant: "destructive",
+          });
+        },
 
-        set((state) => {
-          // Remove all notes in deleted folders
-          const notesNotInFolders = state.notes.filter(
-            (note) =>
-              !note.folderId || !folderIdsToRemove.includes(note.folderId),
-          );
+        moveNote: (noteId, folderId) => {
+          set((state) => ({
+            notes: state.notes.map((note) =>
+              note.id === noteId
+                ? { ...note, folderId, updatedAt: new Date().toISOString() }
+                : note,
+            ),
+          }));
+        },
 
-          // Move notes from deleted folders to parent folder
-          const folderToDelete = state.folders.find((f) => f.id === id);
-          const parentId = folderToDelete?.parentId;
-          const notesToMove = state.notes
-            .filter(
-              (note) =>
-                note.folderId && folderIdsToRemove.includes(note.folderId),
-            )
-            .map((note) => ({
-              ...note,
-              folderId: parentId,
-              updatedAt: new Date().toISOString(),
-            }));
+        createFolder: (name, parentId = null) => {
+          const newFolder: Folder = {
+            id: nanoid(),
+            name,
+            createdAt: now,
+            parentId,
+          };
 
-          // Remove deleted folders from expanded state
-          const newExpandedFolders = { ...state.expandedFolders };
-          folderIdsToRemove.forEach((fid) => {
-            delete newExpandedFolders[fid];
+          set((state) => {
+            // Ensure we have a root folder
+            const updatedFolders = createRootFolderIfNeeded([
+              ...state.folders,
+              newFolder,
+            ]);
+
+            return {
+              folders: updatedFolders,
+              expandedFolders: {
+                ...state.expandedFolders,
+                [parentId || "root"]: true, // Auto-expand parent folder
+              },
+            };
           });
 
-          return {
-            notes: [...notesNotInFolders, ...notesToMove],
-            folders: state.folders.filter(
-              (folder) => !folderIdsToRemove.includes(folder.id),
+          return newFolder.id;
+        },
+
+        updateFolder: (id, data) => {
+          set((state) => ({
+            folders: state.folders.map((folder) =>
+              folder.id === id ? { ...folder, ...data } : folder,
             ),
-            expandedFolders: newExpandedFolders,
+          }));
+        },
+
+        deleteFolder: (id) => {
+          // Get all subfolders recursively
+          const getAllSubfolderIds = (folderId: string): string[] => {
+            const { folders } = get();
+            const directSubfolders = folders.filter(
+              (f) => f.parentId === folderId,
+            );
+            return [
+              folderId,
+              ...directSubfolders.flatMap((sf) => getAllSubfolderIds(sf.id)),
+            ];
           };
-        });
-      },
 
-      toggleFolderExpanded: (folderId) => {
-        set((state) => ({
-          expandedFolders: {
-            ...state.expandedFolders,
-            [folderId]: !state.expandedFolders[folderId],
-          },
-        }));
-      },
+          const folderIdsToRemove = getAllSubfolderIds(id);
 
-      isNoteInFolder: (noteId, folderId) => {
-        const { notes } = get();
-        const note = notes.find((n) => n.id === noteId);
-        return note?.folderId === folderId;
-      },
-    }),
+          set((state) => {
+            // Remove all notes in deleted folders
+            const notesNotInFolders = state.notes.filter(
+              (note) =>
+                !note.folderId || !folderIdsToRemove.includes(note.folderId),
+            );
+
+            // Move notes from deleted folders to parent folder
+            const folderToDelete = state.folders.find((f) => f.id === id);
+            const parentId = folderToDelete?.parentId;
+            const notesToMove = state.notes
+              .filter(
+                (note) =>
+                  note.folderId && folderIdsToRemove.includes(note.folderId),
+              )
+              .map((note) => ({
+                ...note,
+                folderId: parentId,
+                updatedAt: new Date().toISOString(),
+              }));
+
+            // Remove deleted folders from expanded state
+            const newExpandedFolders = { ...state.expandedFolders };
+            folderIdsToRemove.forEach((fid) => {
+              delete newExpandedFolders[fid];
+            });
+
+            return {
+              notes: [...notesNotInFolders, ...notesToMove],
+              folders: state.folders.filter(
+                (folder) => !folderIdsToRemove.includes(folder.id),
+              ),
+              expandedFolders: newExpandedFolders,
+            };
+          });
+        },
+
+        toggleFolderExpanded: (folderId) => {
+          set((state) => ({
+            expandedFolders: {
+              ...state.expandedFolders,
+              [folderId]: !state.expandedFolders[folderId],
+            },
+          }));
+        },
+
+        isNoteInFolder: (noteId, folderId) => {
+          const { notes } = get();
+          const note = notes.find((n) => n.id === noteId);
+          return note?.folderId === folderId;
+        },
+      };
+    },
     {
       name: "notes-storage",
       onRehydrateStorage: () => (state) => {
