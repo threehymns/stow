@@ -39,6 +39,7 @@ import {
   FolderUp,
   PanelLeftOpen,
   PanelLeftClose,
+  Pin,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -59,6 +60,7 @@ type NewItemFormValues = {
 
 export function NoteSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  let [isOpenBecauseHovered, setIsOpenBecauseHovered] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<
@@ -89,7 +91,12 @@ export function NoteSidebar() {
   });
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    if (isOpenBecauseHovered) {
+      setIsOpenBecauseHovered(false);
+      setIsCollapsed(false);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
   };
 
   const filteredNotes = notes.filter((note) =>
@@ -357,6 +364,11 @@ export function NoteSidebar() {
           "h-screen flex flex-col bg-sidebar border-r border-sidebar-border shadow-sm relative transition-all duration-300 ease-in-out select-none",
           isCollapsed ? "w-16" : "w-72",
         )}
+        onMouseEnter={() => {
+          if (isCollapsed ) { setIsOpenBecauseHovered(true) }
+          setIsCollapsed(false)
+        }}
+        onMouseLeave={() => { isOpenBecauseHovered && setIsCollapsed(true); setIsOpenBecauseHovered(false) }}
       >
         <div
           className={cn(
@@ -372,11 +384,10 @@ export function NoteSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            onMouseDown={toggleSidebar}
             onClick={toggleSidebar}
             className={cn("ml-auto", isCollapsed ? "mx-3" : "mx-4")}
           >
-            {isCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+            {isCollapsed ? <PanelLeftOpen /> : isOpenBecauseHovered ? <Pin /> : <PanelLeftClose />}
           </Button>
         </div>
 
