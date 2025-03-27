@@ -1,8 +1,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Sun, Moon, Monitor, Calendar, Settings, Layout, Eye } from "lucide-react";
+import { Sun, Moon, Monitor, Calendar, Settings, Layout, Eye, Palette } from "lucide-react";
 import { SettingCategory, SettingType } from "../types/settings";
+import { themes } from "@/lib/themes";
 
 export const settingsCategories: SettingCategory[] = [
   {
@@ -21,14 +22,24 @@ export const settingsCategories: SettingCategory[] = [
 
 export const settings: SettingType[] = [
   {
-    name: "Theme",
+    name: "Theme Mode",
     id: "theme",
     type: "select",
     initialValue: "system",
     icon: Sun,
     options: ["light", "dark", "system"],
     category: "appearance",
-    description: "Control the application's color theme",
+    description: "Control light or dark mode",
+  },
+  {
+    name: "Color Theme",
+    id: "colorTheme",
+    type: "select",
+    initialValue: "default",
+    icon: Palette,
+    options: themes.map(theme => theme.id),
+    category: "appearance",
+    description: "Choose your preferred color palette",
   },
   {
     name: "Show Note Dates",
@@ -74,6 +85,11 @@ export const useSettingsStore = create<SettingsState>()(
     },
     {
       name: "settings-storage",
+      partialize: (state) => ({
+        theme: state.theme,
+        colorTheme: state.colorTheme,
+        showNoteDates: state.showNoteDates
+      }),
     },
   ),
 );

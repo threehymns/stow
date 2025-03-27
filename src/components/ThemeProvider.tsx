@@ -1,30 +1,40 @@
 import { useEffect } from "react";
 import useSettingsStore from "@/store/settingsStore";
+import { getThemeById } from "@/lib/themes";
 
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { theme } = useSettingsStore();
+  const { theme, colorTheme } = useSettingsStore();
 
   useEffect(() => {
     const root = window.document.documentElement;
-
+    
     // Remove existing classes
     root.classList.remove("light", "dark");
-
-    // Handle system preference
+    
+    // Determine light/dark mode
+    let mode = theme;
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
+      mode = window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
     }
-  }, [theme]);
+    
+    // Add the appropriate class
+    root.classList.add(mode as string);
+    
+    // Apply the selected color theme
+    const selectedTheme = getThemeById(colorTheme as string);
+    const themeColors = mode === "dark" ? selectedTheme.dark : selectedTheme.light;
+    
+    // Apply all theme colors as CSS variables
+    Object.entries(themeColors).forEach(([property, value]) => {
+      root.style.setProperty(`--${property}`, value);
+    });
+  }, [theme, colorTheme]);
 
   // Listen for system preference changes
   useEffect(() => {
@@ -34,13 +44,25 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
     const handleChange = () => {
       const root = window.document.documentElement;
+      const mode = mediaQuery.matches ? "dark" : "light";
+      
+      // Update class
       root.classList.remove("light", "dark");
-      root.classList.add(mediaQuery.matches ? "dark" : "light");
+      root.classList.add(mode);
+      
+      // Apply theme colors
+      const selectedTheme = getThemeById(colorTheme as string);
+      const themeColors = mode === "dark" ? selectedTheme.dark : selectedTheme.light;
+      
+      // Apply all theme colors as CSS variables
+      Object.entries(themeColors).forEach(([property, value]) => {
+        root.style.setProperty(`--${property}`, value);
+      });
     };
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [theme]);
+  }, [theme, colorTheme]);
 
   return <>{children}</>;
 }

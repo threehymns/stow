@@ -18,6 +18,9 @@ import { Sun, Moon, Monitor } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { themes, getThemeById } from "@/lib/themes";
+import ThemePreviewCircle from "@/components/ThemePreviewCircle.tsx";
+import { createElement } from "react";
 
 export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
@@ -30,7 +33,7 @@ export default function Settings() {
         _subcategories: {}
       };
     }
-    
+
     if (setting.subcategory) {
       if (!acc[setting.category]._subcategories[setting.subcategory]) {
         acc[setting.category]._subcategories[setting.subcategory] = [];
@@ -42,7 +45,7 @@ export default function Settings() {
       }
       acc[setting.category].settings.push(setting);
     }
-    
+
     return acc;
   }, {} as Record<string, any>);
 
@@ -67,13 +70,11 @@ export default function Settings() {
             <CardContent className="space-y-2">
               {Object.entries(groupedSettings).map(([categoryId, category]) => (
                 <div key={categoryId} className="space-y-2">
-                  <a 
-                    href={`#${categoryId}`} 
+                  <a
+                    href={`#${categoryId}`}
                     className="flex items-center text-sm font-medium hover:underline"
                   >
-                    {category._category?.icon && (
-                      <category._category.icon className="h-4 w-4 mr-2" />
-                    )}
+                    {category._category?.icon && createElement(category._category.icon, { className: "h-4 w-4 mr-2" })}
                     {category._category?.name || categoryId}
                   </a>
                 </div>
@@ -87,18 +88,16 @@ export default function Settings() {
           {Object.entries(groupedSettings).map(([categoryId, category]) => (
             <div key={categoryId} id={categoryId} className="space-y-4">
               <div className="flex items-center space-x-2">
-                {category._category?.icon && (
-                  <category._category.icon className="h-5 w-5" />
-                )}
+                {category._category?.icon && createElement(category._category.icon, { className: "h-5 w-5" })}
                 <h2 className="text-xl font-semibold">{category._category?.name || categoryId}</h2>
               </div>
-              
+
               {category._category?.description && (
                 <p className="text-muted-foreground">{category._category.description}</p>
               )}
-              
+
               <Separator />
-              
+
               {/* Regular settings in this category */}
               {category.settings && category.settings.length > 0 && (
                 <Card>
@@ -111,7 +110,7 @@ export default function Settings() {
                   </CardContent>
                 </Card>
               )}
-              
+
               {/* Subcategories */}
               {Object.entries(category._subcategories).length > 0 && (
                 <div className="space-y-4">
@@ -123,12 +122,12 @@ export default function Settings() {
                         </TabsTrigger>
                       ))}
                     </TabsList>
-                    
+
                     {Object.entries(category._subcategories).map(([subcategory, subcategorySettings]) => (
                       <TabsContent key={subcategory} value={subcategory}>
                         <Card>
                           <CardContent className="pt-6 space-y-6">
-                            {subcategorySettings.map((setting) => (
+                            {(subcategorySettings as any[]).map((setting) => (
                               <div key={setting.id} className="space-y-4">
                                 {renderSetting(setting, getSetting, setSetting)}
                               </div>
@@ -160,7 +159,7 @@ function renderSetting(
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor={setting.id} className="text-base font-medium flex items-center">
-                {setting.icon && <setting.icon className="h-4 w-4 mr-2" />}
+                {setting.icon && createElement(setting.icon, { className: "h-4 w-4 mr-2" })}
                 {setting.name}
               </Label>
               {setting.description && (
@@ -184,29 +183,46 @@ function renderSetting(
                 } else {
                   icon = <Monitor className="h-5 w-5 mr-2" />;
                 }
+              } else if (setting.id === "colorTheme") {
+                // Use a colored circle to represent the theme
+                const themeObj = getThemeById(option);
+                icon = (
+                  <ThemePreviewCircle theme={getThemeById(option)} />
+                );
+              }
+
+              let displayName = option;
+
+              // For colorTheme setting, show the theme name instead of ID
+              if (setting.id === "colorTheme") {
+                const themeObj = getThemeById(option);
+                displayName = themeObj.name;
+              } else {
+                // Capitalize first letter for other options
+                displayName = option.charAt(0).toUpperCase() + option.slice(1);
               }
 
               return (
                 <ToggleGroupItem
                   key={option}
                   value={option}
-                  aria-label={`${option} option`}
+                  aria-label={`${displayName} option`}
                   className="flex items-center"
                 >
                   {icon}
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                  {displayName}
                 </ToggleGroupItem>
               );
             })}
           </ToggleGroup>
         </div>
       )}
-      
+
       {setting.type === "toggle" && (
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label htmlFor={`toggle-${setting.id}`} className="text-base font-medium flex items-center">
-              {setting.icon && <setting.icon className="h-4 w-4 mr-2" />}
+              {setting.icon && createElement(setting.icon, { className: "h-4 w-4 mr-2" })}
               {setting.name}
             </Label>
             {setting.description && (
