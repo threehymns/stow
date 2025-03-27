@@ -62,7 +62,7 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
   return (
     <div
       className={cn(
-        "flex flex-wrap gap-1 p-1 rounded-md bg-muted/50",
+        "flex flex-wrap gap-1 p-1 rounded-md bg-muted/50 shadow",
         className,
       )}
     >

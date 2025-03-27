@@ -116,22 +116,19 @@ export function MarkdownEditor() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -5 }}
           transition={{ duration: 0.2 }}
-          className="flex-1 flex flex-col overflow-auto"
+          className="flex-1 flex flex-col"
         >
-          <div className="px-6 pt-6 pb-3">
+          <div className="px-6 pt-6 pb-3 w-full bg-background/75 backdrop-blur left-0 z-10 absolute" style={{ clipPath: 'inset(0 8px 0 0)' }}>
             <Input
               value={title}
               onChange={handleTitleChange}
               placeholder="Untitled Note"
-              className="border-0 p-0 md:text-2xl font-semibold focus-visible:ring-0 focus-visible:ring-secondary leading-relaxed"
+              className="border-0 bg-transparent p-0 mb-2 md:text-2xl font-semibold focus-visible:ring-0 focus-visible:ring-secondary leading-relaxed"
             />
+            <EditorToolbar editor={editor} className="max-w-prose w-fit mx-auto" />
           </div>
 
-          <div className="px-6 pb-2 max-w-prose mx-auto">
-            <EditorToolbar editor={editor} />
-          </div>
-
-          <div className="flex-1 px-6 py-4 overflow-auto" onClick={() => editor.chain().focus()}>
+          <div className="flex-1 px-6 py-28" onClick={() => editor.chain().focus()}>
             <EditorContent
               editor={editor}
               className="min-h-full max-w-prose mx-auto pb-96"

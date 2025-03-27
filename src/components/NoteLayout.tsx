@@ -21,7 +21,7 @@ export function NoteLayout() {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4 z-10"
+              className="absolute top-4 right-4 z-20"
               asChild
             >
               <Link to="/settings">
