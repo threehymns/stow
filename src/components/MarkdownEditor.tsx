@@ -129,7 +129,7 @@ export function MarkdownEditor() {
             />
           </div>
 
-          <div className="flex-1 px-6 pt-20 max-w-prose mx-auto">
+          <div className="flex-1 px-6 pt-20 w-full max-w-prose mx-auto">
             <Input
               value={title}
               onChange={handleTitleChange}
