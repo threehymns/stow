@@ -17,7 +17,7 @@ import {
   useSettingsStore,
   settingsCategories,
 } from "@/store/settingsStore";
-import { SettingType } from "@/types/settings";
+import { SettingCategory, SettingType } from "@/types/settings";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -68,7 +68,7 @@ export function CommandBar() {
       acc[setting.category].settings.push(setting);
       return acc;
     },
-    {} as Record<string, { category: any; settings: SettingType[] }>,
+    {} as Record<string, { category: SettingCategory; settings: SettingType[] }>,
   );
 
   return (

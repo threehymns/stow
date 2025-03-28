@@ -1,17 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Form, FormField, FormItem, FormControl } from "@/components/ui/form";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,10 +12,7 @@ import useSettingsStore from "@/store/settingsStore";
 import { Folder, Note } from "@/types/notes";
 import { cn } from "@/lib/utils";
 import {
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
-  File,
   FileText,
   Folder as FolderIcon,
   FolderPlus,
@@ -37,9 +23,6 @@ import {
   Trash2,
   FilePlus,
   FolderUp,
-  PanelLeftOpen,
-  PanelLeftClose,
-  Pin,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -57,8 +40,6 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarFooter,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 type NewItemFormValues = {

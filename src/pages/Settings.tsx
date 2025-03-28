@@ -3,9 +3,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardDescription,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -18,10 +16,9 @@ import {
 } from "@/store/settingsStore";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Sun, Moon, Monitor } from "lucide-react";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { themes, getThemeById } from "@/lib/themes";
+import { getThemeById } from "@/lib/themes";
 import ThemePreviewCircle from "@/components/ThemePreviewCircle.tsx";
 import { createElement } from "react";
 

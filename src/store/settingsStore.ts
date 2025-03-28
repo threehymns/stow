@@ -2,10 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
   Sun,
-  Moon,
-  Monitor,
   Calendar,
-  Settings,
   Layout,
   Eye,
   Palette,
@@ -85,7 +82,7 @@ export const useSettingsStore = create<SettingsState>()(
         settingsConfig: settings,
         settingsCategories,
         setSetting: (settingId, value) =>
-          set((state) => {
+          set(() => {
             return { [settingId]: value };
           }),
         getSetting: (settingId) => get()[settingId],
