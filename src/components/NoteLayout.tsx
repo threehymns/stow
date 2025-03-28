@@ -1,8 +1,6 @@
 import { NoteSidebar } from "./NoteSidebar";
 import { MarkdownEditor } from "./MarkdownEditor";
-import { useEffect } from "react";
-import useNoteStore from "@/store/noteStore";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, SidebarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,13 +8,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import HeaderActions from "./HeaderActions";
 
 export function NoteLayout() {
   return (
     <div className="flex h-screen overflow-hidden">
       <SidebarProvider>
-        <SidebarTrigger className="fixed top-3 left-3 z-50" />
+        <HeaderActions />
         <NoteSidebar />
         <div className="flex flex-col flex-1 overflow-hidden relative">
           <Tooltip>
