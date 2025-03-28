@@ -1,7 +1,15 @@
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Sun, Moon, Monitor, Calendar, Settings, Layout, Eye, Palette } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Monitor,
+  Calendar,
+  Settings,
+  Layout,
+  Eye,
+  Palette,
+} from "lucide-react";
 import { SettingCategory, SettingType } from "../types/settings";
 import { themes } from "@/lib/themes";
 
@@ -37,7 +45,7 @@ export const settings: SettingType[] = [
     type: "select",
     initialValue: "default",
     icon: Palette,
-    options: themes.map(theme => theme.id),
+    options: themes.map((theme) => theme.id),
     category: "appearance",
     description: "Choose your preferred color palette",
   },
@@ -88,7 +96,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         theme: state.theme,
         colorTheme: state.colorTheme,
-        showNoteDates: state.showNoteDates
+        showNoteDates: state.showNoteDates,
       }),
     },
   ),

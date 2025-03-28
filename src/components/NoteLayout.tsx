@@ -16,7 +16,7 @@ export function NoteLayout() {
   return (
     <div className="flex h-screen overflow-hidden">
       <SidebarProvider>
-        <SidebarTrigger className="absolute top-4 left-4 z-50" />
+        <SidebarTrigger className="fixed top-3 left-3 z-50" />
         <NoteSidebar />
         <div className="flex flex-col flex-1 overflow-hidden relative">
           <Tooltip>

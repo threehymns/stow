@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,17 +12,24 @@ import {
 } from "@/components/ui/command";
 import { FileText, FolderPlus, FilePlus } from "lucide-react";
 import useNoteStore from "@/store/noteStore";
-import { settings, useSettingsStore, settingsCategories } from "@/store/settingsStore";
+import {
+  settings,
+  useSettingsStore,
+  settingsCategories,
+} from "@/store/settingsStore";
 import { SettingType } from "@/types/settings";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
-  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(null);
+  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(
+    null,
+  );
   const navigate = useNavigate();
 
-  const { notes, folders, setActiveNoteId, createNote, createFolder } = useNoteStore();
+  const { notes, folders, setActiveNoteId, createNote, createFolder } =
+    useNoteStore();
   const { getSetting, setSetting } = useSettingsStore();
 
   useEffect(() => {
@@ -49,16 +55,21 @@ export function CommandBar() {
   };
 
   // Group settings by category
-  const groupedSettings = settings.reduce((acc, setting) => {
-    if (!acc[setting.category]) {
-      acc[setting.category] = {
-        category: settingsCategories.find(cat => cat.id === setting.category),
-        settings: []
-      };
-    }
-    acc[setting.category].settings.push(setting);
-    return acc;
-  }, {} as Record<string, { category: any; settings: SettingType[] }>);
+  const groupedSettings = settings.reduce(
+    (acc, setting) => {
+      if (!acc[setting.category]) {
+        acc[setting.category] = {
+          category: settingsCategories.find(
+            (cat) => cat.id === setting.category,
+          ),
+          settings: [],
+        };
+      }
+      acc[setting.category].settings.push(setting);
+      return acc;
+    },
+    {} as Record<string, { category: any; settings: SettingType[] }>,
+  );
 
   return (
     <>
@@ -137,7 +148,10 @@ export function CommandBar() {
 
           <CommandGroup heading="Settings">
             {Object.entries(groupedSettings).map(([categoryId, category]) => (
-              <CommandGroup key={categoryId} heading={category.category?.name || categoryId}>
+              <CommandGroup
+                key={categoryId}
+                heading={category.category?.name || categoryId}
+              >
                 {category.settings
                   .filter((s) => s.type === "select")
                   .map((setting) => (
@@ -145,7 +159,9 @@ export function CommandBar() {
                       key={setting.id}
                       onSelect={() => handleCommandSelection(setting)}
                     >
-                      {setting.icon && <setting.icon className="mr-2 h-4 w-4" />}
+                      {setting.icon && (
+                        <setting.icon className="mr-2 h-4 w-4" />
+                      )}
                       <span>{setting.name}</span>
                     </CommandItem>
                   ))}
@@ -159,7 +175,9 @@ export function CommandBar() {
                         setOpen(false);
                       }}
                     >
-                      {setting.icon && <setting.icon className="mr-2 h-4 w-4" />}
+                      {setting.icon && (
+                        <setting.icon className="mr-2 h-4 w-4" />
+                      )}
                       <span>Toggle {setting.name}</span>
                       <CommandShortcut>
                         {getSetting(setting.id) ? "On" : "Off"}

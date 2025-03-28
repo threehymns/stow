@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
-import { settings, useSettingsStore, settingsCategories } from "@/store/settingsStore";
+import {
+  settings,
+  useSettingsStore,
+  settingsCategories,
+} from "@/store/settingsStore";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
@@ -26,28 +29,33 @@ export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
 
   // Group settings by category and subcategory
-  const groupedSettings = settings.reduce((acc, setting) => {
-    if (!acc[setting.category]) {
-      acc[setting.category] = {
-        _category: settingsCategories.find(cat => cat.id === setting.category),
-        _subcategories: {}
-      };
-    }
-
-    if (setting.subcategory) {
-      if (!acc[setting.category]._subcategories[setting.subcategory]) {
-        acc[setting.category]._subcategories[setting.subcategory] = [];
+  const groupedSettings = settings.reduce(
+    (acc, setting) => {
+      if (!acc[setting.category]) {
+        acc[setting.category] = {
+          _category: settingsCategories.find(
+            (cat) => cat.id === setting.category,
+          ),
+          _subcategories: {},
+        };
       }
-      acc[setting.category]._subcategories[setting.subcategory].push(setting);
-    } else {
-      if (!acc[setting.category].settings) {
-        acc[setting.category].settings = [];
-      }
-      acc[setting.category].settings.push(setting);
-    }
 
-    return acc;
-  }, {} as Record<string, any>);
+      if (setting.subcategory) {
+        if (!acc[setting.category]._subcategories[setting.subcategory]) {
+          acc[setting.category]._subcategories[setting.subcategory] = [];
+        }
+        acc[setting.category]._subcategories[setting.subcategory].push(setting);
+      } else {
+        if (!acc[setting.category].settings) {
+          acc[setting.category].settings = [];
+        }
+        acc[setting.category].settings.push(setting);
+      }
+
+      return acc;
+    },
+    {} as Record<string, any>,
+  );
 
   return (
     <div className="h-screen flex flex-col p-4 md:p-8 max-w-6xl mx-auto animate-fade-in">
@@ -74,7 +82,10 @@ export default function Settings() {
                     href={`#${categoryId}`}
                     className="flex items-center text-sm font-medium hover:underline"
                   >
-                    {category._category?.icon && createElement(category._category.icon, { className: "h-4 w-4 mr-2" })}
+                    {category._category?.icon &&
+                      createElement(category._category.icon, {
+                        className: "h-4 w-4 mr-2",
+                      })}
                     {category._category?.name || categoryId}
                   </a>
                 </div>
@@ -88,12 +99,19 @@ export default function Settings() {
           {Object.entries(groupedSettings).map(([categoryId, category]) => (
             <div key={categoryId} id={categoryId} className="space-y-4">
               <div className="flex items-center space-x-2">
-                {category._category?.icon && createElement(category._category.icon, { className: "h-5 w-5" })}
-                <h2 className="text-xl font-semibold">{category._category?.name || categoryId}</h2>
+                {category._category?.icon &&
+                  createElement(category._category.icon, {
+                    className: "h-5 w-5",
+                  })}
+                <h2 className="text-xl font-semibold">
+                  {category._category?.name || categoryId}
+                </h2>
               </div>
 
               {category._category?.description && (
-                <p className="text-muted-foreground">{category._category.description}</p>
+                <p className="text-muted-foreground">
+                  {category._category.description}
+                </p>
               )}
 
               <Separator />
@@ -116,26 +134,34 @@ export default function Settings() {
                 <div className="space-y-4">
                   <Tabs defaultValue={Object.keys(category._subcategories)[0]}>
                     <TabsList>
-                      {Object.keys(category._subcategories).map((subcategory) => (
-                        <TabsTrigger key={subcategory} value={subcategory}>
-                          {subcategory}
-                        </TabsTrigger>
-                      ))}
+                      {Object.keys(category._subcategories).map(
+                        (subcategory) => (
+                          <TabsTrigger key={subcategory} value={subcategory}>
+                            {subcategory}
+                          </TabsTrigger>
+                        ),
+                      )}
                     </TabsList>
 
-                    {Object.entries(category._subcategories).map(([subcategory, subcategorySettings]) => (
-                      <TabsContent key={subcategory} value={subcategory}>
-                        <Card>
-                          <CardContent className="pt-6 space-y-6">
-                            {(subcategorySettings as any[]).map((setting) => (
-                              <div key={setting.id} className="space-y-4">
-                                {renderSetting(setting, getSetting, setSetting)}
-                              </div>
-                            ))}
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                    ))}
+                    {Object.entries(category._subcategories).map(
+                      ([subcategory, subcategorySettings]) => (
+                        <TabsContent key={subcategory} value={subcategory}>
+                          <Card>
+                            <CardContent className="pt-6 space-y-6">
+                              {(subcategorySettings as any[]).map((setting) => (
+                                <div key={setting.id} className="space-y-4">
+                                  {renderSetting(
+                                    setting,
+                                    getSetting,
+                                    setSetting,
+                                  )}
+                                </div>
+                              ))}
+                            </CardContent>
+                          </Card>
+                        </TabsContent>
+                      ),
+                    )}
                   </Tabs>
                 </div>
               )}
@@ -150,7 +176,7 @@ export default function Settings() {
 function renderSetting(
   setting: any,
   getSetting: (id: string) => any,
-  setSetting: (id: string, value: any) => void
+  setSetting: (id: string, value: any) => void,
 ) {
   return (
     <>
@@ -158,12 +184,18 @@ function renderSetting(
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor={setting.id} className="text-base font-medium flex items-center">
-                {setting.icon && createElement(setting.icon, { className: "h-4 w-4 mr-2" })}
+              <Label
+                htmlFor={setting.id}
+                className="text-base font-medium flex items-center"
+              >
+                {setting.icon &&
+                  createElement(setting.icon, { className: "h-4 w-4 mr-2" })}
                 {setting.name}
               </Label>
               {setting.description && (
-                <p className="text-sm text-muted-foreground mt-1">{setting.description}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {setting.description}
+                </p>
               )}
             </div>
           </div>
@@ -186,9 +218,7 @@ function renderSetting(
               } else if (setting.id === "colorTheme") {
                 // Use a colored circle to represent the theme
                 const themeObj = getThemeById(option);
-                icon = (
-                  <ThemePreviewCircle theme={getThemeById(option)} />
-                );
+                icon = <ThemePreviewCircle theme={getThemeById(option)} />;
               }
 
               let displayName = option;
@@ -221,12 +251,18 @@ function renderSetting(
       {setting.type === "toggle" && (
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label htmlFor={`toggle-${setting.id}`} className="text-base font-medium flex items-center">
-              {setting.icon && createElement(setting.icon, { className: "h-4 w-4 mr-2" })}
+            <Label
+              htmlFor={`toggle-${setting.id}`}
+              className="text-base font-medium flex items-center"
+            >
+              {setting.icon &&
+                createElement(setting.icon, { className: "h-4 w-4 mr-2" })}
               {setting.name}
             </Label>
             {setting.description && (
-              <p className="text-sm text-muted-foreground">{setting.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {setting.description}
+              </p>
             )}
           </div>
           <Switch

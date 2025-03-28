@@ -98,7 +98,7 @@ export function NoteSidebar() {
     const newFolderId = createFolder("New Folder", parentId);
     setEditingItemId(newFolderId);
     const untitledCount = folders.filter(
-      (n) => n.parentId === parentId && n.name.startsWith("New Folder")
+      (n) => n.parentId === parentId && n.name.startsWith("New Folder"),
     ).length;
     setEditingName(`New Folder ${untitledCount + 1}`);
   };
@@ -107,7 +107,7 @@ export function NoteSidebar() {
     const newNoteId = createNote(parentId);
     setEditingItemId(newNoteId);
     const untitledCount = notes.filter(
-      (n) => n.folderId === parentId && n.title.startsWith("Untitled Note")
+      (n) => n.folderId === parentId && n.title.startsWith("Untitled Note"),
     ).length;
     setEditingName(`Untitled Note ${untitledCount + 1}`);
   };
@@ -124,7 +124,7 @@ export function NoteSidebar() {
   // Helper to check if moving a folder would create a cycle
   const wouldCreateCycle = (
     folderId: string,
-    targetParentId: string
+    targetParentId: string,
   ): boolean => {
     if (folderId === targetParentId) return true;
     const childIds = getChildFolderIds(folderId);
@@ -174,7 +174,7 @@ export function NoteSidebar() {
                       .filter(
                         (f) =>
                           f.id !== folder.id &&
-                          !wouldCreateCycle(folder.id, f.id)
+                          !wouldCreateCycle(folder.id, f.id),
                       )
                       .map((targetFolder) => (
                         <DropdownMenuItem
@@ -289,7 +289,7 @@ export function NoteSidebar() {
             }}
             className={cn(
               "flex items-start rounded-md pl-2 pr-1 py-2 relative group/item hover:bg-sidebar-accent",
-              activeNoteId === note.id ? "bg-sidebar-accent" : ""
+              activeNoteId === note.id ? "bg-sidebar-accent" : "",
             )}
           >
             <FileText
@@ -358,7 +358,7 @@ export function NoteSidebar() {
                   size={14}
                   className={cn(
                     "transition-transform",
-                    !isExpanded && "-rotate-90"
+                    !isExpanded && "-rotate-90",
                   )}
                 />
               </Button>

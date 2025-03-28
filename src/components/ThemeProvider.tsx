@@ -11,10 +11,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     // Remove existing classes
     root.classList.remove("light", "dark");
-    
+
     // Determine light/dark mode
     let mode = theme;
     if (theme === "system") {
@@ -22,14 +22,15 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         ? "dark"
         : "light";
     }
-    
+
     // Add the appropriate class
     root.classList.add(mode as string);
-    
+
     // Apply the selected color theme
     const selectedTheme = getThemeById(colorTheme as string);
-    const themeColors = mode === "dark" ? selectedTheme.dark : selectedTheme.light;
-    
+    const themeColors =
+      mode === "dark" ? selectedTheme.dark : selectedTheme.light;
+
     // Apply all theme colors as CSS variables
     Object.entries(themeColors).forEach(([property, value]) => {
       root.style.setProperty(`--${property}`, value);
@@ -45,15 +46,16 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     const handleChange = () => {
       const root = window.document.documentElement;
       const mode = mediaQuery.matches ? "dark" : "light";
-      
+
       // Update class
       root.classList.remove("light", "dark");
       root.classList.add(mode);
-      
+
       // Apply theme colors
       const selectedTheme = getThemeById(colorTheme as string);
-      const themeColors = mode === "dark" ? selectedTheme.dark : selectedTheme.light;
-      
+      const themeColors =
+        mode === "dark" ? selectedTheme.dark : selectedTheme.light;
+
       // Apply all theme colors as CSS variables
       Object.entries(themeColors).forEach(([property, value]) => {
         root.style.setProperty(`--${property}`, value);

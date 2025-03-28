@@ -20,7 +20,6 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { EditorToolbar } from "./EditorToolbar";
 import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
-import { SidebarTrigger } from "./ui/sidebar";
 
 export function MarkdownEditor() {
   const { notes, activeNoteId, updateNote, setActiveNoteId } = useNoteStore();
@@ -144,10 +143,11 @@ export function MarkdownEditor() {
                 }
               }}
             />
-            <EditorContent
-              editor={editor}
+            <EditorContent editor={editor} />
+            <div
+              className="min-h-[calc(100vh-15em)]"
+              onClick={() => editor.commands.focus("end")}
             />
-            <div className="min-h-[calc(100vh-15em)]" onClick={() => editor.commands.focus("end")} />
           </div>
         </motion.div>
       </AnimatePresence>

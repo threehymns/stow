@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
 import { Note, Folder } from "@/types/notes";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface NoteState {
   notes: Note[];
@@ -108,11 +108,7 @@ const useNoteStore = create<NoteState>()(
                   : null
                 : activeNoteId,
           });
-          toast({
-            title: "Note deleted",
-            description: `Successfully deleted "${note.title}"`,
-            variant: "destructive",
-          });
+          toast.success(`Successfully deleted "${note.title}"`);
         },
 
         moveNote: (noteId, folderId) => {
