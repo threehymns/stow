@@ -69,6 +69,10 @@ export function NoteSidebar() {
 
   const { showNoteDates } = useSettingsStore();
 
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+
   const {
     notes,
     folders,
@@ -82,6 +86,7 @@ export function NoteSidebar() {
     deleteFolder,
     toggleFolderExpanded,
     moveNote,
+    updateNote,
   } = useNoteStore();
 
   const form = useForm<NewItemFormValues>({
@@ -100,11 +105,11 @@ export function NoteSidebar() {
   };
 
   const filteredNotes = notes.filter((note) =>
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()),
+    note.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredFolders = folders.filter((folder) =>
-    folder.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    folder.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCreateFolder = (data: NewItemFormValues) => {
@@ -125,7 +130,7 @@ export function NoteSidebar() {
   // Helper to check if moving a folder would create a cycle
   const wouldCreateCycle = (
     folderId: string,
-    targetParentId: string,
+    targetParentId: string
   ): boolean => {
     if (folderId === targetParentId) return true;
     const childIds = getChildFolderIds(folderId);
@@ -181,7 +186,7 @@ export function NoteSidebar() {
                       .filter(
                         (f) =>
                           f.id !== folder.id &&
-                          !wouldCreateCycle(folder.id, f.id),
+                          !wouldCreateCycle(folder.id, f.id)
                       )
                       .map((targetFolder) => (
                         <DropdownMenuItem
@@ -221,7 +226,7 @@ export function NoteSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-4 w-6 p-0 opacity-0 group-hover:opacity-100"
+            className="h-6 w-6 p-0 absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical size={14} />
@@ -263,12 +268,25 @@ export function NoteSidebar() {
     );
   };
 
+  const handleRenameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItemId) return;
+
+    const folder = folders.find((f) => f.id === editingItemId);
+    if (folder) {
+      updateFolder(editingItemId, { name: editingName });
+    } else {
+      updateNote(editingItemId, { title: editingName });
+    }
+    setEditingItemId(null);
+  };
+
   const FolderContents = (parentId: string | null) => {
     const folderNotes = notes.filter((note) => note.folderId === parentId);
     const subfolders = folders.filter((folder) => folder.parentId === parentId);
 
     return (
-      <div className="pl-0">
+      <div className="pl-0 space-y-0.5">
         {subfolders.map((folder) => Folder(folder))}
 
         {folderNotes.map((note) => (
@@ -276,19 +294,40 @@ export function NoteSidebar() {
             key={note.id}
             onMouseDown={() => setActiveNoteId(note.id)}
             onClick={() => setActiveNoteId(note.id)}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setEditingItemId(note.id);
+              setEditingName(note.title);
+            }}
             className={cn(
-              "flex items-start rounded-md pl-2 pr-1 py-2 cursor-pointer relative group hover:bg-sidebar-accent",
-              activeNoteId === note.id ? "bg-sidebar-accent" : "",
+              "flex items-start rounded-md pl-2 pr-1 py-2 relative group hover:bg-sidebar-accent",
+              activeNoteId === note.id ? "bg-sidebar-accent" : ""
             )}
           >
             <FileText
               size={14}
               className="mr-2 mt-0.5 min-w-4 text-sidebar-foreground"
             />
-            <div className="overflow-hidden flex-1">
-              <h3 className="text-xs font-medium truncate text-sidebar-foreground">
-                {note.title}
-              </h3>
+            <div className="flex-1 w-2">
+              {editingItemId === note.id ? (
+                <input
+                  ref={editInputRef}
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRenameSubmit(e);
+                    }
+                  }}
+                  onBlur={handleRenameSubmit}
+                  className="text-xs bg-sidebar block focus:outline-none ring-1 ring-offset-1 ring-offset-sidebar-accent ring-sidebar-border font-bold rounded-sm w-full"
+                  autoFocus
+                />
+              ) : (
+                <h3 className="text-xs font-medium truncate text-sidebar-foreground">
+                  {note.title}
+                </h3>
+              )}
               {showNoteDates && (
                 <p className="text-[10px] text-muted-foreground truncate">
                   {format(new Date(note.updatedAt), "MMM d, h:mm a")}
@@ -311,7 +350,16 @@ export function NoteSidebar() {
           open={isExpanded}
           onOpenChange={() => toggleFolderExpanded(folder.id)}
         >
-          <div className="flex items-center rounded-md pl-2 pr-1 cursor-pointer relative group hover:bg-sidebar-accent">
+          <div
+            className="flex items-center rounded-md pl-2 pr-1 relative group hover:bg-sidebar-accent mb-0.5"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              if (folder.id !== "root") {
+                setEditingItemId(folder.id);
+                setEditingName(folder.name);
+              }
+            }}
+          >
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
@@ -322,7 +370,7 @@ export function NoteSidebar() {
                   size={14}
                   className={cn(
                     "transition-transform",
-                    !isExpanded && "-rotate-90",
+                    !isExpanded && "-rotate-90"
                   )}
                 />
               </Button>
@@ -341,11 +389,28 @@ export function NoteSidebar() {
                 />
               )}
             </CollapsibleTrigger>
-            <CollapsibleTrigger asChild>
-              <span className="py-2 text-xs font-medium truncate text-sidebar-foreground flex-1">
-                {folder.name}
-              </span>
-            </CollapsibleTrigger>
+
+            {editingItemId === folder.id ? (
+              <input
+                ref={editInputRef}
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRenameSubmit(e);
+                  }
+                }}
+                onBlur={handleRenameSubmit}
+                className="my-2 text-xs bg-sidebar block focus:outline-none ring-1 ring-offset-1 ring-offset-sidebar-accent ring-sidebar-border font-bold rounded-sm flex-1"
+                autoFocus
+              />
+            ) : (
+              <CollapsibleTrigger asChild>
+                <span className="py-2 w-2 text-xs font-medium truncate text-sidebar-foreground flex-1">
+                  {folder.name}
+                </span>
+              </CollapsibleTrigger>
+            )}
 
             {FolderContextMenu(folder)}
           </div>
@@ -362,18 +427,23 @@ export function NoteSidebar() {
       <div
         className={cn(
           "h-screen flex flex-col bg-sidebar border-r border-sidebar-border shadow-sm relative transition-all duration-300 ease-in-out select-none",
-          isCollapsed ? "w-16" : "w-72",
+          isCollapsed ? "w-16" : "w-72"
         )}
         onMouseEnter={() => {
-          if (isCollapsed ) { setIsOpenBecauseHovered(true) }
-          setIsCollapsed(false)
+          if (isCollapsed) {
+            setIsOpenBecauseHovered(true);
+          }
+          setIsCollapsed(false);
         }}
-        onMouseLeave={() => { isOpenBecauseHovered && setIsCollapsed(true); setIsOpenBecauseHovered(false) }}
+        onMouseLeave={() => {
+          isOpenBecauseHovered && setIsCollapsed(true);
+          setIsOpenBecauseHovered(false);
+        }}
       >
         <div
           className={cn(
             "flex items-center pt-4 justify-center",
-            !isCollapsed && "justify-between",
+            !isCollapsed && "justify-between"
           )}
         >
           {!isCollapsed && (
@@ -387,14 +457,20 @@ export function NoteSidebar() {
             onClick={toggleSidebar}
             className={cn("ml-auto", isCollapsed ? "mx-3" : "mx-4")}
           >
-            {isCollapsed ? <PanelLeftOpen /> : isOpenBecauseHovered ? <Pin /> : <PanelLeftClose />}
+            {isCollapsed ? (
+              <PanelLeftOpen />
+            ) : isOpenBecauseHovered ? (
+              <Pin />
+            ) : (
+              <PanelLeftClose />
+            )}
           </Button>
         </div>
 
         <div
           className={cn(
             "flex justify-center py-2",
-            !isCollapsed && "px-4 space-x-1",
+            !isCollapsed && "px-4 space-x-1"
           )}
         >
           <div
@@ -476,7 +552,7 @@ export function NoteSidebar() {
                         onMouseDown={() => setActiveNoteId(note.id)}
                         className={cn(
                           "flex items-start rounded-md pl-2 pr-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent",
-                          activeNoteId === note.id ? "bg-sidebar-accent" : "",
+                          activeNoteId === note.id ? "bg-sidebar-accent" : ""
                         )}
                       >
                         <FileText
@@ -491,7 +567,7 @@ export function NoteSidebar() {
                             <p className="text-[10px] text-muted-foreground truncate">
                               {format(
                                 new Date(note.updatedAt),
-                                "MMM d, h:mm a",
+                                "MMM d, h:mm a"
                               )}
                             </p>
                           )}
