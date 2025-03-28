@@ -1,69 +1,117 @@
-# Welcome to your Lovable project
+<div align="center">
+<img src="./public/logo.svg" alt="Stow logo" width="200">
 
-## Project info
+# Stow
 
-**URL**: https://lovable.dev/projects/b1e5b997-724e-4aeb-ae42-ce4b44e648ac
+<span>Web based note-taking for power users.</span>
 
-## How can I edit this code?
+[![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-Latest-blue.svg)](https://www.typescriptlang.org/) [![Vite](https://img.shields.io/badge/Vite-Latest-purple.svg)](https://vitejs.dev/) [![TipTap](https://img.shields.io/badge/TipTap-2.11.5-green.svg)](https://tiptap.dev/) [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-There are several ways of editing your application.
+</div>
 
-**Use Lovable**
+## ✨ Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b1e5b997-724e-4aeb-ae42-ce4b44e648ac) and start prompting.
+- **Rich Text Editor**: Powered by TipTap with support for all common formatting options
+- **Intuitive Note Management**: Organize notes in folders with a clean, responsive sidebar
+- **Theme Customization**: Multiple built-in themes with light and dark mode support
+- **Command Bar**: Quick access to all app functions with keyboard shortcuts (Ctrl+K)
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Local Storage**: All notes are stored locally in your browser
+- **Modern UI**: Built with Tailwind CSS and Shadcn UI components
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v22 or higher)
+- pnpm (or npm)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+1. Clone the repository
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+git clone https://github.com/threehymns/stow.git
+cd stow
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install dependencies
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+pnpm install
+# or
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Start the development server
+
+```bash
+pnpm dev
+# or
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. Open your browser and navigate to `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🏗️ Building for Production
 
-**Use GitHub Codespaces**
+```bash
+pnpm build
+# or
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The built files will be in the `dist` directory.
 
-## What technologies are used for this project?
+## 🧩 Project Structure
 
-This project is built with .
+```
+stow/
+├── public/              # Static assets
+├── src/
+│   ├── components/      # React components
+│   │   └── ui/          # UI components (shadcn/ui)
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utility functions and theme definitions
+│   ├── pages/           # Page components
+│   ├── store/           # State management (Zustand)
+│   └── types/           # TypeScript type definitions
+├── index.html           # Entry HTML file
+└── package.json         # Project dependencies and scripts
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🎨 Theming
 
-## How can I deploy this project?
+Stow comes with several built-in themes that can be selected from the Settings page. Themes include both light and dark variants that automatically switch based on your system preferences or manual selection.
 
-Simply open [Lovable](https://lovable.dev/projects/b1e5b997-724e-4aeb-ae42-ce4b44e648ac) and click on Share -> Publish.
+## 🛠️ Technologies Used
 
-## I want to use a custom domain - is that possible?
+- **Vite**: Build tool and development server
+- **Shadcn UI**: Re-usable UI components
+- **Tailwind CSS**: Utility-first CSS framework
+- **TipTap**: Extensible rich text editor framework
+- **Zustand**: State management and persistence
+- **Motion**: Animation framework
+- **React Router**: Client-side routing
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgements
+
+- [TipTap](https://tiptap.dev/) for the amazing editor
+- [Shadcn UI](https://ui.shadcn.com/) for the beautiful components
+- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
+- [Zustand](https://zustand-demo.pmnd.rs/) for the state management
+- [Vite](https://vitejs.dev/) for the blazing fast development experience
