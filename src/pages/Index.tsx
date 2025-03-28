@@ -12,7 +12,7 @@ import {
 const Index = () => {
   // Change document title
   useEffect(() => {
-    document.title = "Notes App";
+    document.title = "Stow - Notes App";
   }, []);
 
   const openCommandBar = (e: React.MouseEvent) => {

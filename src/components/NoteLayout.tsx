@@ -10,29 +10,33 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export function NoteLayout() {
   return (
     <div className="flex h-screen overflow-hidden">
-      <NoteSidebar />
-      <div className="flex flex-col flex-1 overflow-hidden relative">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4 z-20"
-              asChild
-            >
-              <Link to="/settings">
-                <SettingsIcon className="h-5 w-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Settings</TooltipContent>
-        </Tooltip>
-        <MarkdownEditor />
-      </div>
+      <SidebarProvider>
+        <SidebarTrigger className="absolute top-4 left-4 z-50" />
+        <NoteSidebar />
+        <div className="flex flex-col flex-1 overflow-hidden relative">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 z-20"
+                asChild
+              >
+                <Link to="/settings">
+                  <SettingsIcon className="h-5 w-5" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Settings</TooltipContent>
+          </Tooltip>
+          <MarkdownEditor />
+        </div>
+      </SidebarProvider>
     </div>
   );
 }

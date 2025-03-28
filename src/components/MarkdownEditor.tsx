@@ -20,6 +20,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { EditorToolbar } from "./EditorToolbar";
 import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
+import { SidebarTrigger } from "./ui/sidebar";
 
 export function MarkdownEditor() {
   const { notes, activeNoteId, updateNote, setActiveNoteId } = useNoteStore();
@@ -118,21 +119,35 @@ export function MarkdownEditor() {
           transition={{ duration: 0.2 }}
           className="flex-1 flex flex-col"
         >
-          <div className="px-6 pt-6 pb-3 w-full bg-background/75 backdrop-blur left-0 z-10 absolute" style={{ clipPath: 'inset(0 8px 0 0)' }}>
+          <div
+            className="px-6 py-2 w-full bg-background/75 backdrop-blur-md left-0 z-10 absolute"
+            style={{ clipPath: "inset(0 8px 0 0)" }}
+          >
+            <EditorToolbar
+              editor={editor}
+              className="max-w-prose w-fit mx-auto"
+            />
+          </div>
+
+          <div className="flex-1 px-6 pt-20 max-w-prose mx-auto">
             <Input
               value={title}
               onChange={handleTitleChange}
               placeholder="Untitled Note"
-              className="border-0 bg-transparent p-0 mb-2 md:text-2xl font-semibold focus-visible:ring-0 focus-visible:ring-secondary leading-relaxed"
+              className="border-0 bg-transparent p-0 mb-2 md:text-2xl font-black focus-visible:ring-0 focus-visible:ring-secondary leading-relaxed"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  editor.commands.focus("start");
+                  editor.commands.enter();
+                  editor.commands.focus("start");
+                }
+              }}
             />
-            <EditorToolbar editor={editor} className="max-w-prose w-fit mx-auto" />
-          </div>
-
-          <div className="flex-1 px-6 py-28" onClick={() => editor.chain().focus()}>
             <EditorContent
               editor={editor}
-              className="min-h-full max-w-prose mx-auto pb-96"
             />
+            <div className="min-h-[calc(100vh-15em)]" onClick={() => editor.commands.focus("end")} />
           </div>
         </motion.div>
       </AnimatePresence>

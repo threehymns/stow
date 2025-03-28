@@ -33,7 +33,6 @@ import {
   FolderOpen,
   MoreVertical,
   Plus,
-  Search,
   Trash2,
   FilePlus,
   FolderUp,
@@ -53,15 +52,19 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 type NewItemFormValues = {
   name: string;
 };
 
 export function NoteSidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  let [isOpenBecauseHovered, setIsOpenBecauseHovered] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<
     string | null
@@ -94,23 +97,6 @@ export function NoteSidebar() {
       name: "",
     },
   });
-
-  const toggleSidebar = () => {
-    if (isOpenBecauseHovered) {
-      setIsOpenBecauseHovered(false);
-      setIsCollapsed(false);
-    } else {
-      setIsCollapsed(!isCollapsed);
-    }
-  };
-
-  const filteredNotes = notes.filter((note) =>
-    note.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredFolders = folders.filter((folder) =>
-    folder.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleCreateFolder = (data: NewItemFormValues) => {
     createFolder(data.name, selectedFolderForNewItem);
@@ -315,7 +301,7 @@ export function NoteSidebar() {
                   value={editingName}
                   onChange={(e) => setEditingName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       handleRenameSubmit(e);
                     }
                   }}
@@ -396,7 +382,7 @@ export function NoteSidebar() {
                 value={editingName}
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === "Enter") {
                     handleRenameSubmit(e);
                   }
                 }}
@@ -423,168 +409,42 @@ export function NoteSidebar() {
   };
 
   return (
-    <>
-      <div
-        className={cn(
-          "h-screen flex flex-col bg-sidebar border-r border-sidebar-border shadow-sm relative transition-all duration-300 ease-in-out select-none",
-          isCollapsed ? "w-16" : "w-72"
-        )}
-        onMouseEnter={() => {
-          if (isCollapsed) {
-            setIsOpenBecauseHovered(true);
-          }
-          setIsCollapsed(false);
-        }}
-        onMouseLeave={() => {
-          isOpenBecauseHovered && setIsCollapsed(true);
-          setIsOpenBecauseHovered(false);
-        }}
+    <Sidebar>
+      <SidebarHeader
+        className="flex-row items-center pt-2 justify-end px-2 py-1.5"
       >
-        <div
-          className={cn(
-            "flex items-center pt-4 justify-center",
-            !isCollapsed && "justify-between"
-          )}
-        >
-          {!isCollapsed && (
-            <h2 className="mx-4 text-sm font-semibold text-sidebar-foreground animate-slide-in">
-              MarkdownHive
-            </h2>
-          )}
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className={cn("ml-auto", isCollapsed ? "mx-3" : "mx-4")}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen />
-            ) : isOpenBecauseHovered ? (
-              <Pin />
-            ) : (
-              <PanelLeftClose />
-            )}
-          </Button>
-        </div>
-
-        <div
-          className={cn(
-            "flex justify-center py-2",
-            !isCollapsed && "px-4 space-x-1"
-          )}
-        >
-          <div
-            className={cn("relative animate-slide-in", isCollapsed && "hidden")}
-          >
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search notes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          {!isCollapsed && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setSelectedFolderForNewItem(null);
-                setNewFolderDialogOpen(true);
-              }}
-              className="animate-slide-in shrink-0"
-            >
-              <FolderPlus />
-              <span className="sr-only">New Folder</span>
-            </Button>
-          )}
-          <Button
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                createNote(null);
-                e.preventDefault();
-              }
-            }}
-            onMouseDown={() => createNote(null)}
-            size="icon"
             variant="outline"
-            className="shrink-0"
+            size="icon"
+            onClick={() => {
+              setSelectedFolderForNewItem(null);
+              setNewFolderDialogOpen(true);
+            }}
           >
-            <Plus />
-            <span className="sr-only">New Note</span>
+            <FolderPlus />
+            <span className="sr-only">New Folder</span>
           </Button>
-        </div>
+        <Button
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              createNote(null);
+              e.preventDefault();
+            }
+          }}
+          onMouseDown={() => createNote(null)}
+          size="icon"
+          variant="outline"
+        >
+          <Plus />
+          <span className="sr-only">New Note</span>
+        </Button>
+      </SidebarHeader>
 
-        <Separator className="my-1" />
-
-        <ScrollArea className="flex-1">
-          <div className="p-2">
-            {searchTerm ? (
-              // Search results
-              <div>
-                {filteredFolders.length === 0 && filteredNotes.length === 0 ? (
-                  <p className="text-xs text-muted-foreground p-2">
-                    No results found
-                  </p>
-                ) : (
-                  <>
-                    {filteredFolders.map((folder) => (
-                      <div
-                        key={folder.id}
-                        className="flex items-center rounded-md pl-2 pr-1 py-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent"
-                        onClick={() => toggleFolderExpanded(folder.id)}
-                        onMouseDown={() => toggleFolderExpanded(folder.id)}
-                      >
-                        <FolderIcon
-                          size={14}
-                          className="mr-2 text-sidebar-foreground"
-                        />
-                        <span className="text-xs font-medium truncate text-sidebar-foreground">
-                          {folder.name}
-                        </span>
-                      </div>
-                    ))}
-
-                    {filteredNotes.map((note) => (
-                      <div
-                        key={note.id}
-                        onClick={() => setActiveNoteId(note.id)}
-                        onMouseDown={() => setActiveNoteId(note.id)}
-                        className={cn(
-                          "flex items-start rounded-md pl-2 pr-1 mb-1 cursor-pointer relative group hover:bg-sidebar-accent",
-                          activeNoteId === note.id ? "bg-sidebar-accent" : ""
-                        )}
-                      >
-                        <FileText
-                          size={14}
-                          className="mr-2 mt-0.5 text-sidebar-foreground"
-                        />
-                        <div className="overflow-hidden flex-1">
-                          <h3 className="py-2 text-xs font-medium truncate text-sidebar-foreground">
-                            {note.title}
-                          </h3>
-                          {showNoteDates && (
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {format(
-                                new Date(note.updatedAt),
-                                "MMM d, h:mm a"
-                              )}
-                            </p>
-                          )}
-                        </div>
-                        {NoteContextMenu(note)}
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            ) : (
-              // Normal folder structure
-              <>{FolderContents(null)}</>
-            )}
-          </div>
-        </ScrollArea>
-      </div>
+      <Separator className="my-1" />
+      
+      <SidebarContent>
+        <div className="p-2 select-none">{FolderContents(null)}</div>
+      </SidebarContent>
 
       <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -621,6 +481,6 @@ export function NoteSidebar() {
           </Form>
         </DialogContent>
       </Dialog>
-    </>
+    </Sidebar>
   );
 }
