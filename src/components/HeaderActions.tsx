@@ -1,3 +1,4 @@
+
 import React from "react";
 import useNoteStore from "@/store/noteStore";
 import { FolderPlus, Plus } from "lucide-react";
@@ -6,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { SidebarIcon } from "lucide-react";
+import { AuthStatus } from "./auth/AuthStatus";
 
 const HeaderActions = () => {
   const { createFolder, createNote } = useNoteStore();
@@ -28,53 +30,60 @@ const HeaderActions = () => {
   );
 
   return (
-    <div
-      className={cn(
-        "fixed top-2 left-2 z-[10000] bg-sidebar p-1 rounded-lg flex space-x-1 transition-colors duration-500",
-        sidebar.open && "bg-transparent",
-      )}
-    >
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7"
-        title="Toggle Sidebar"
-        onClick={() => sidebar.toggleSidebar()}
-      >
-        <SidebarIcon />
-      </Button>
-      <AnimatePresence>
-        {!sidebar.open && (
-          <motion.div
-            className="flex space-x-1 -z-10"
-            initial="hidden"
-            whileInView="visible"
-            exit="hidden"
-            variants={list}
-          >
-            <MotionButton
-              onClick={() => createFolder("New Folder")}
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              title="New Folder"
-              variants={item}
-            >
-              <FolderPlus />
-            </MotionButton>
-            <MotionButton
-              onClick={() => createNote(null)}
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              title="New Note"
-              variants={item}
-            >
-              <Plus />
-            </MotionButton>
-          </motion.div>
+    <div className="fixed top-2 left-2 right-2 z-[10000] flex justify-between">
+      <div
+        className={cn(
+          "bg-sidebar p-1 rounded-lg flex space-x-1 transition-colors duration-500",
+          sidebar.open && "bg-transparent",
         )}
-      </AnimatePresence>
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          title="Toggle Sidebar"
+          onClick={() => sidebar.toggleSidebar()}
+        >
+          <SidebarIcon />
+        </Button>
+        <AnimatePresence>
+          {!sidebar.open && (
+            <motion.div
+              className="flex space-x-1 -z-10"
+              initial="hidden"
+              whileInView="visible"
+              exit="hidden"
+              variants={list}
+            >
+              <MotionButton
+                onClick={() => createFolder("New Folder")}
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                title="New Folder"
+                variants={item}
+              >
+                <FolderPlus />
+              </MotionButton>
+              <MotionButton
+                onClick={() => createNote(null)}
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                title="New Note"
+                variants={item}
+              >
+                <Plus />
+              </MotionButton>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      
+      {/* Auth Status */}
+      <div className="p-1 rounded-lg flex items-center">
+        <AuthStatus />
+      </div>
     </div>
   );
 };

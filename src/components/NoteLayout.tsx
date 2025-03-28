@@ -1,6 +1,7 @@
+
 import { NoteSidebar } from "./NoteSidebar";
 import { MarkdownEditor } from "./MarkdownEditor";
-import { Settings as SettingsIcon, SidebarIcon } from "lucide-react";
+import { Settings as SettingsIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,8 +11,25 @@ import {
 } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import HeaderActions from "./HeaderActions";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
+import useNoteStore from "@/store/noteStore";
 
 export function NoteLayout() {
+  const { user, loading } = useAuth();
+  const { syncWithSupabase, resetStore, isSynced } = useNoteStore();
+
+  // Sync notes with Supabase when user signs in
+  useEffect(() => {
+    if (user && !loading && !isSynced) {
+      // Sync with Supabase when user is authenticated
+      syncWithSupabase(user.id);
+    } else if (!user && !loading) {
+      // Reset store when user signs out
+      resetStore();
+    }
+  }, [user, loading, syncWithSupabase, resetStore, isSynced]);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <SidebarProvider>

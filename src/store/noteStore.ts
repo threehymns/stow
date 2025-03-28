@@ -3,12 +3,15 @@ import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
 import { Note, Folder } from "@/types/notes";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NoteState {
   notes: Note[];
   folders: Folder[];
   activeNoteId: string | null;
   expandedFolders: Record<string, boolean>;
+  isLoading: boolean;
+  isSynced: boolean;
 
   setActiveNoteId: (id: string | null) => void;
   createNote: (folderId?: string | null) => string;
@@ -21,21 +24,13 @@ interface NoteState {
   deleteFolder: (id: string) => void;
   toggleFolderExpanded: (folderId: string) => void;
   isNoteInFolder: (noteId: string, folderId: string) => boolean;
+  
+  syncWithSupabase: (userId: string) => Promise<void>;
+  resetStore: () => void;
 }
 
 // Helper to create a root folder if none exists
 const createRootFolderIfNeeded = (folders: Folder[]): Folder[] => {
-  // if (folders.length === 0) {
-  //   const now = new Date().toISOString();
-  //   return [
-  //     {
-  //       id: "root",
-  //       name: "All Notes",
-  //       createdAt: now,
-  //       parentId: null,
-  //     },
-  //   ];
-  // }
   return folders;
 };
 
@@ -57,6 +52,8 @@ const useNoteStore = create<NoteState>()(
         folders: [],
         activeNoteId: defaultNote.id,
         expandedFolders: { root: true }, // Root folder is expanded by default
+        isLoading: false,
+        isSynced: false,
 
         setActiveNoteId: (id) => {
           set({ activeNoteId: id });
@@ -108,7 +105,10 @@ const useNoteStore = create<NoteState>()(
                   : null
                 : activeNoteId,
           });
-          toast.success(`Successfully deleted "${note.title}"`);
+          
+          if (note) {
+            toast.success(`Successfully deleted "${note.title}"`);
+          }
         },
 
         moveNote: (noteId, folderId) => {
@@ -222,6 +222,105 @@ const useNoteStore = create<NoteState>()(
           const note = notes.find((n) => n.id === noteId);
           return note?.folderId === folderId;
         },
+        
+        syncWithSupabase: async (userId) => {
+          const { notes, folders } = get();
+          
+          set({ isLoading: true });
+          
+          try {
+            // Fetch notes from Supabase
+            const { data: supabaseNotes, error: notesError } = await supabase
+              .from('notes')
+              .select('*')
+              .eq('user_id', userId);
+              
+            if (notesError) throw notesError;
+            
+            // Fetch folders from Supabase
+            const { data: supabseFolders, error: foldersError } = await supabase
+              .from('folders')
+              .select('*')
+              .eq('user_id', userId);
+              
+            if (foldersError) throw foldersError;
+            
+            // If user has no notes or folders in Supabase, upload local data
+            if (supabaseNotes.length === 0 && supabseFolders.length === 0) {
+              // Upload folders first
+              for (const folder of folders) {
+                await supabase
+                  .from('folders')
+                  .insert({
+                    id: folder.id,
+                    name: folder.name,
+                    parent_id: folder.parentId,
+                    user_id: userId,
+                    created_at: folder.createdAt
+                  });
+              }
+              
+              // Then upload notes
+              for (const note of notes) {
+                await supabase
+                  .from('notes')
+                  .insert({
+                    id: note.id,
+                    title: note.title,
+                    content: note.content,
+                    folder_id: note.folderId,
+                    user_id: userId,
+                    created_at: note.createdAt,
+                    updated_at: note.updatedAt
+                  });
+              }
+              
+              toast.success('Notes synchronized to cloud');
+            } else {
+              // Otherwise, download data from Supabase
+              const convertedNotes = supabaseNotes.map(note => ({
+                id: note.id,
+                title: note.title,
+                content: note.content || '',
+                folderId: note.folder_id,
+                createdAt: note.created_at,
+                updatedAt: note.updated_at
+              }));
+              
+              const convertedFolders = supabseFolders.map(folder => ({
+                id: folder.id,
+                name: folder.name,
+                parentId: folder.parent_id,
+                createdAt: folder.created_at
+              }));
+              
+              set({ 
+                notes: convertedNotes,
+                folders: convertedFolders,
+                activeNoteId: convertedNotes.length > 0 ? convertedNotes[0].id : null
+              });
+              
+              toast.success('Notes synchronized from cloud');
+            }
+            
+            set({ isSynced: true });
+          } catch (error) {
+            console.error('Error syncing with Supabase:', error);
+            toast.error('Failed to synchronize notes');
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+        
+        resetStore: () => {
+          set({
+            notes: [defaultNote],
+            folders: [],
+            activeNoteId: defaultNote.id,
+            expandedFolders: { root: true },
+            isSynced: false
+          });
+        }
       };
     },
     {
