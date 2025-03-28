@@ -1,3 +1,6 @@
+
+"use client";
+
 import { useEffect } from "react";
 import useSettingsStore from "@/store/settingsStore";
 import { getThemeById } from "@/lib/themes";
@@ -7,7 +10,9 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { theme, colorTheme } = useSettingsStore();
+  const settingsStore = useSettingsStore();
+  const theme = settingsStore.theme;
+  const colorTheme = settingsStore.colorTheme;
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -24,10 +29,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     }
 
     // Add the appropriate class
-    root.classList.add(mode as string);
+    root.classList.add(mode);
 
     // Apply the selected color theme
-    const selectedTheme = getThemeById(colorTheme as string);
+    const selectedTheme = getThemeById(colorTheme);
     const themeColors =
       mode === "dark" ? selectedTheme.dark : selectedTheme.light;
 
@@ -52,7 +57,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       root.classList.add(mode);
 
       // Apply theme colors
-      const selectedTheme = getThemeById(colorTheme as string);
+      const selectedTheme = getThemeById(colorTheme);
       const themeColors =
         mode === "dark" ? selectedTheme.dark : selectedTheme.light;
 
