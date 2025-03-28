@@ -90,6 +90,10 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  
+  .dark {
+    color-scheme: dark;
+  }
 
   /* Editor content styling */
   .editor-content h1 {
