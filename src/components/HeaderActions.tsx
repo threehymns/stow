@@ -16,7 +16,7 @@ const HeaderActions = () => {
       visible: { opacity: 1, width: "auto" },
       hidden: { opacity: 0, width: 0 },
     }),
-    []
+    [],
   );
 
   const item = React.useMemo(
@@ -24,14 +24,14 @@ const HeaderActions = () => {
       visible: { opacity: 1, x: 0 },
       hidden: { opacity: 0, x: -50 },
     }),
-    []
+    [],
   );
 
   return (
     <div
       className={cn(
         "fixed top-2 left-2 z-[10000] bg-sidebar p-1 rounded-lg flex space-x-1 transition-colors duration-500",
-        sidebar.open && "bg-transparent"
+        sidebar.open && "bg-transparent",
       )}
     >
       <Button

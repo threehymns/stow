@@ -1,12 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  Sun,
-  Calendar,
-  Layout,
-  Eye,
-  Palette,
-} from "lucide-react";
+import { Sun, Calendar, Layout, Eye, Palette } from "lucide-react";
 import { SettingCategory, SettingType } from "../types/settings";
 import { themes } from "@/lib/themes";
 

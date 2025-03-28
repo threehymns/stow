@@ -68,7 +68,10 @@ export function CommandBar() {
       acc[setting.category].settings.push(setting);
       return acc;
     },
-    {} as Record<string, { category: SettingCategory; settings: SettingType[] }>,
+    {} as Record<
+      string,
+      { category: SettingCategory; settings: SettingType[] }
+    >,
   );
 
   return (

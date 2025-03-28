@@ -35,7 +35,7 @@ export function MarkdownEditor() {
     } else {
       setActiveNoteId(null);
     }
-  }, [activeNote, activeNoteId, setActiveNoteId,]);
+  }, [activeNote, activeNoteId, setActiveNoteId]);
 
   const editor = useEditor({
     extensions: [
