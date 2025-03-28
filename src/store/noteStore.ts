@@ -11,7 +11,7 @@ interface NoteState {
   expandedFolders: Record<string, boolean>;
 
   setActiveNoteId: (id: string | null) => void;
-  createNote: (folderId?: string | null) => void;
+  createNote: (folderId?: string | null) => string;
   updateNote: (id: string, data: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   moveNote: (noteId: string, folderId: string | null) => void;
@@ -76,6 +76,8 @@ const useNoteStore = create<NoteState>()(
             notes: [newNote, ...state.notes],
             activeNoteId: newNote.id,
           }));
+
+          return newNote.id;
         },
 
         updateNote: (id, data) => {

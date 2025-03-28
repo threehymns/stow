@@ -32,6 +32,7 @@ import {
   FolderPlus,
   FolderOpen,
   MoreVertical,
+  MoreHorizontal,
   Plus,
   Trash2,
   FilePlus,
@@ -65,11 +66,6 @@ type NewItemFormValues = {
 };
 
 export function NoteSidebar() {
-  const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
-  const [selectedFolderForNewItem, setSelectedFolderForNewItem] = useState<
-    string | null
-  >(null);
-
   const { showNoteDates } = useSettingsStore();
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -98,10 +94,22 @@ export function NoteSidebar() {
     },
   });
 
-  const handleCreateFolder = (data: NewItemFormValues) => {
-    createFolder(data.name, selectedFolderForNewItem);
-    setNewFolderDialogOpen(false);
-    form.reset();
+  const handleCreateFolder = (parentId: string | null) => {
+    const newFolderId = createFolder("New Folder", parentId);
+    setEditingItemId(newFolderId);
+    const untitledCount = folders.filter(
+      (n) => n.parentId === parentId && n.name.startsWith("New Folder")
+    ).length;
+    setEditingName(`New Folder ${untitledCount + 1}`);
+  };
+
+  const handleCreateNote = (parentId: string | null) => {
+    const newNoteId = createNote(parentId);
+    setEditingItemId(newNoteId);
+    const untitledCount = notes.filter(
+      (n) => n.folderId === parentId && n.title.startsWith("Untitled Note")
+    ).length;
+    setEditingName(`Untitled Note ${untitledCount + 1}`);
   };
 
   // Helper to get all child folder IDs (recursively)
@@ -130,23 +138,17 @@ export function NoteSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0 absolute right-2 opacity-0 group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <MoreVertical size={14} />
+            <MoreHorizontal size={14} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
-          <DropdownMenuItem
-            onClick={() => {
-              setSelectedFolderForNewItem(folder.id);
-              setNewFolderDialogOpen(true);
-            }}
-          >
+          <DropdownMenuItem onClick={() => handleCreateFolder(folder.id)}>
             <FolderPlus className="mr-2 h-4 w-4" />
             New Folder
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => createNote(folder.id)}>
+          <DropdownMenuItem onClick={() => handleCreateNote(folder.id)}>
             <FilePlus className="mr-2 h-4 w-4" />
             New Note
           </DropdownMenuItem>
@@ -212,7 +214,7 @@ export function NoteSidebar() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0 absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
+            className="h-6 w-6 p-0 absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             <MoreVertical size={14} />
@@ -286,7 +288,7 @@ export function NoteSidebar() {
               setEditingName(note.title);
             }}
             className={cn(
-              "flex items-start rounded-md pl-2 pr-1 py-2 relative group hover:bg-sidebar-accent",
+              "flex items-start rounded-md pl-2 pr-1 py-2 relative group/item hover:bg-sidebar-accent",
               activeNoteId === note.id ? "bg-sidebar-accent" : ""
             )}
           >
@@ -337,7 +339,7 @@ export function NoteSidebar() {
           onOpenChange={() => toggleFolderExpanded(folder.id)}
         >
           <div
-            className="flex items-center rounded-md pl-2 pr-1 relative group hover:bg-sidebar-accent mb-0.5"
+            className="flex items-center rounded-md pl-2 pr-1 relative group/item hover:bg-sidebar-accent mb-0.5"
             onDoubleClick={(e) => {
               e.stopPropagation();
               if (folder.id !== "root") {
@@ -348,9 +350,9 @@ export function NoteSidebar() {
           >
             <CollapsibleTrigger asChild>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="h-4 w-4 p-0 transition-none"
+                className="absolute left-3 h-4 w-4 p-0 transition-none opacity-0 group-hover/item:opacity-100"
               >
                 <ChevronDown
                   size={14}
@@ -398,7 +400,23 @@ export function NoteSidebar() {
               </CollapsibleTrigger>
             )}
 
-            {FolderContextMenu(folder)}
+            <div className="h-6 absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 space-x-0.5 *:h-6 *:w-6 *:p-0">
+              {FolderContextMenu(folder)}
+              <Button
+                onClick={() => handleCreateFolder(folder.id)}
+                variant="ghost"
+                title="New Folder"
+              >
+                <FolderPlus />
+              </Button>
+              <Button
+                onClick={() => handleCreateNote(folder.id)}
+                variant="ghost"
+                title="New Note"
+              >
+                <Plus />
+              </Button>
+            </div>
           </div>
           <CollapsibleContent className="pl-4">
             {FolderContents(folder.id)}
@@ -410,28 +428,17 @@ export function NoteSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader
-        className="flex-row items-center pt-2 justify-end px-2 py-1.5"
-      >
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setSelectedFolderForNewItem(null);
-              setNewFolderDialogOpen(true);
-            }}
-          >
-            <FolderPlus />
-            <span className="sr-only">New Folder</span>
-          </Button>
+      <SidebarHeader className="flex-row items-center pt-2 justify-end px-2 py-1.5">
         <Button
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              createNote(null);
-              e.preventDefault();
-            }
-          }}
-          onMouseDown={() => createNote(null)}
+          variant="outline"
+          size="icon"
+          onClick={() => handleCreateFolder(null)}
+        >
+          <FolderPlus />
+          <span className="sr-only">New Folder</span>
+        </Button>
+        <Button
+          onClick={() => handleCreateNote(null)}
           size="icon"
           variant="outline"
         >
@@ -441,46 +448,10 @@ export function NoteSidebar() {
       </SidebarHeader>
 
       <Separator className="my-1" />
-      
+
       <SidebarContent>
         <div className="p-2 select-none">{FolderContents(null)}</div>
       </SidebarContent>
-
-      <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Create New Folder</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleCreateFolder)}>
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder="Folder name" {...field} autoFocus />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setNewFolderDialogOpen(false);
-                    form.reset();
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Create</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </Sidebar>
   );
 }
