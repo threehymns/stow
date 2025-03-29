@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
@@ -62,7 +61,6 @@ const useNoteStore = create<NoteState>()(
 
         createNote: (folderId = null) => {
           const now = new Date().toISOString();
-          const { user } = supabase.auth.getSession();
           const newNote: Note = {
             id: nanoid(),
             title: "Untitled Note",

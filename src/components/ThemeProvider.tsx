@@ -38,7 +38,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
     // Apply all theme colors as CSS variables
     Object.entries(themeColors).forEach(([property, value]) => {
-      root.style.setProperty(`--${property}`, value);
+      root.style.setProperty(`--${property}`, value as string);
     });
   }, [theme, colorTheme]);
 
@@ -63,7 +63,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       // Apply all theme colors as CSS variables
       Object.entries(themeColors).forEach(([property, value]) => {
-        root.style.setProperty(`--${property}`, value);
+        root.style.setProperty(`--${property}`, value as string);
       });
     };
 

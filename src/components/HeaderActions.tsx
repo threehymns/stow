@@ -29,6 +29,16 @@ const HeaderActions = () => {
     [],
   );
 
+  const handleCreateFolder = () => {
+    const newFolderId = createFolder("New Folder", null);
+    console.log("Created new folder with ID:", newFolderId);
+  };
+
+  const handleCreateNote = () => {
+    const newNoteId = createNote(null);
+    console.log("Created new note with ID:", newNoteId);
+  };
+
   return (
     <div className="fixed top-2 left-2 right-2 z-[10000] flex justify-between">
       <div
@@ -56,7 +66,7 @@ const HeaderActions = () => {
               variants={list}
             >
               <MotionButton
-                onClick={() => createFolder("New Folder")}
+                onClick={handleCreateFolder}
                 variant="ghost"
                 size="icon"
                 className="size-7"
@@ -66,7 +76,7 @@ const HeaderActions = () => {
                 <FolderPlus />
               </MotionButton>
               <MotionButton
-                onClick={() => createNote(null)}
+                onClick={handleCreateNote}
                 variant="ghost"
                 size="icon"
                 className="size-7"

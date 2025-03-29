@@ -21,13 +21,19 @@ export function NoteLayout() {
 
   // Sync notes with Supabase when user signs in
   useEffect(() => {
-    if (user && !loading && !isSynced) {
-      // Sync with Supabase when user is authenticated
-      syncWithSupabase(user.id);
-    } else if (!user && !loading) {
-      // Reset store when user signs out
-      resetStore();
-    }
+    const syncData = async () => {
+      if (user && !loading && !isSynced) {
+        console.log("Syncing with Supabase for user:", user.id);
+        // Sync with Supabase when user is authenticated
+        await syncWithSupabase(user.id);
+      } else if (!user && !loading) {
+        console.log("User not authenticated, resetting store");
+        // Reset store when user signs out
+        resetStore();
+      }
+    };
+    
+    syncData();
   }, [user, loading, syncWithSupabase, resetStore, isSynced]);
 
   return (

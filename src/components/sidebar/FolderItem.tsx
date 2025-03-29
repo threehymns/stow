@@ -64,7 +64,8 @@ export function FolderItem({
   deleteNote,
   wouldCreateCycle,
 }: FolderItemProps) {
-  const isExpanded = expandedFolders[folder.id];
+  // Ensure isExpanded is a boolean
+  const isExpanded = !!expandedFolders[folder.id];
   
   // Find child folders and notes
   const subfolders = folders.filter((f) => f.parentId === folder.id);
