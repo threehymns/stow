@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -23,6 +24,7 @@ import {
   Trash2,
   FilePlus,
   FolderUp,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -41,6 +43,7 @@ import {
   SidebarHeader,
   SidebarContent,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
 
 type NewItemFormValues = {
   name: string;
@@ -48,6 +51,7 @@ type NewItemFormValues = {
 
 export function NoteSidebar() {
   const { showNoteDates } = useSettingsStore();
+  const { user } = useAuth();
 
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -58,6 +62,7 @@ export function NoteSidebar() {
     folders,
     activeNoteId,
     expandedFolders,
+    isLoading,
     setActiveNoteId,
     createNote,
     deleteNote,
@@ -410,28 +415,57 @@ export function NoteSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="flex-row items-center pt-2 justify-end px-2 py-1.5">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => handleCreateFolder(null)}
-        >
-          <FolderPlus />
-          <span className="sr-only">New Folder</span>
-        </Button>
-        <Button
-          onClick={() => handleCreateNote(null)}
-          size="icon"
-          variant="outline"
-        >
-          <Plus />
-          <span className="sr-only">New Note</span>
-        </Button>
+        {isLoading ? (
+          <div className="flex items-center text-muted-foreground text-xs">
+            <Loader2 size={16} className="animate-spin mr-2" />
+            Syncing...
+          </div>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handleCreateFolder(null)}
+            >
+              <FolderPlus />
+              <span className="sr-only">New Folder</span>
+            </Button>
+            <Button
+              onClick={() => handleCreateNote(null)}
+              size="icon"
+              variant="outline"
+            >
+              <Plus />
+              <span className="sr-only">New Note</span>
+            </Button>
+          </>
+        )}
       </SidebarHeader>
 
       <Separator className="my-1" />
 
       <SidebarContent>
-        <div className="p-2 select-none">{FolderContents(null)}</div>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+            <Loader2 size={24} className="animate-spin mb-2" />
+            <p className="text-sm">Syncing your notes...</p>
+          </div>
+        ) : notes.length === 0 && folders.length === 0 ? (
+          <div className="p-4 text-center text-muted-foreground">
+            <p className="text-sm mb-2">You don't have any notes yet</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleCreateNote(null)}
+              className="mx-auto"
+            >
+              <Plus size={16} className="mr-1" />
+              Create your first note
+            </Button>
+          </div>
+        ) : (
+          <div className="p-2 select-none">{FolderContents(null)}</div>
+        )}
       </SidebarContent>
     </Sidebar>
   );

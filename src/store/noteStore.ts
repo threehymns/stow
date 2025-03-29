@@ -1,7 +1,8 @@
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { nanoid } from "nanoid";
-import { Note, Folder } from "@/types/notes";
+import { Note, Folder, DatabaseNote, DatabaseFolder } from "@/types/notes";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,6 +61,8 @@ const useNoteStore = create<NoteState>()(
         },
 
         createNote: (folderId = null) => {
+          const now = new Date().toISOString();
+          const { user } = supabase.auth.getSession();
           const newNote: Note = {
             id: nanoid(),
             title: "Untitled Note",
@@ -73,6 +76,31 @@ const useNoteStore = create<NoteState>()(
             notes: [newNote, ...state.notes],
             activeNoteId: newNote.id,
           }));
+
+          // If user is authenticated, create note in Supabase
+          const { isSynced } = get();
+          if (isSynced) {
+            supabase.auth.getSession().then(({ data }) => {
+              if (data.session) {
+                supabase
+                  .from('notes')
+                  .insert({
+                    id: newNote.id,
+                    title: newNote.title,
+                    content: newNote.content,
+                    folder_id: newNote.folderId,
+                    user_id: data.session.user.id,
+                    created_at: newNote.createdAt,
+                    updated_at: newNote.updatedAt
+                  })
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error("Error syncing new note to Supabase:", error);
+                    }
+                  });
+              }
+            });
+          }
 
           return newNote.id;
         },
@@ -89,6 +117,36 @@ const useNoteStore = create<NoteState>()(
                 : note,
             ),
           }));
+
+          // If user is authenticated, update note in Supabase
+          const { isSynced } = get();
+          if (isSynced) {
+            const note = get().notes.find((n) => n.id === id);
+            if (note) {
+              supabase.auth.getSession().then(({ data }) => {
+                if (data.session) {
+                  const updateData: Record<string, any> = {
+                    updated_at: new Date().toISOString()
+                  };
+                  
+                  if (data.title !== undefined) updateData.title = data.title;
+                  if (data.content !== undefined) updateData.content = data.content;
+                  if (data.folderId !== undefined) updateData.folder_id = data.folderId;
+                  
+                  supabase
+                    .from('notes')
+                    .update(updateData)
+                    .eq('id', id)
+                    .eq('user_id', data.session.user.id)
+                    .then(({ error }) => {
+                      if (error) {
+                        console.error("Error updating note in Supabase:", error);
+                      }
+                    });
+                }
+              });
+            }
+          }
         },
 
         deleteNote: (id) => {
@@ -108,6 +166,25 @@ const useNoteStore = create<NoteState>()(
           
           if (note) {
             toast.success(`Successfully deleted "${note.title}"`);
+            
+            // If user is authenticated, delete note from Supabase
+            const { isSynced } = get();
+            if (isSynced) {
+              supabase.auth.getSession().then(({ data }) => {
+                if (data.session) {
+                  supabase
+                    .from('notes')
+                    .delete()
+                    .eq('id', id)
+                    .eq('user_id', data.session.user.id)
+                    .then(({ error }) => {
+                      if (error) {
+                        console.error("Error deleting note from Supabase:", error);
+                      }
+                    });
+                }
+              });
+            }
           }
         },
 
@@ -119,9 +196,32 @@ const useNoteStore = create<NoteState>()(
                 : note,
             ),
           }));
+          
+          // If user is authenticated, update note folder in Supabase
+          const { isSynced } = get();
+          if (isSynced) {
+            supabase.auth.getSession().then(({ data }) => {
+              if (data.session) {
+                supabase
+                  .from('notes')
+                  .update({ 
+                    folder_id: folderId,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', noteId)
+                  .eq('user_id', data.session.user.id)
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error("Error moving note in Supabase:", error);
+                    }
+                  });
+              }
+            });
+          }
         },
 
         createFolder: (name, parentId = null) => {
+          const now = new Date().toISOString();
           const newFolder: Folder = {
             id: nanoid(),
             name,
@@ -144,6 +244,29 @@ const useNoteStore = create<NoteState>()(
               },
             };
           });
+          
+          // If user is authenticated, create folder in Supabase
+          const { isSynced } = get();
+          if (isSynced) {
+            supabase.auth.getSession().then(({ data }) => {
+              if (data.session) {
+                supabase
+                  .from('folders')
+                  .insert({
+                    id: newFolder.id,
+                    name: newFolder.name,
+                    parent_id: newFolder.parentId,
+                    user_id: data.session.user.id,
+                    created_at: newFolder.createdAt
+                  })
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error("Error syncing new folder to Supabase:", error);
+                    }
+                  });
+              }
+            });
+          }
 
           return newFolder.id;
         },
@@ -154,6 +277,33 @@ const useNoteStore = create<NoteState>()(
               folder.id === id ? { ...folder, ...data } : folder,
             ),
           }));
+          
+          // If user is authenticated, update folder in Supabase
+          const { isSynced } = get();
+          if (isSynced) {
+            const folder = get().folders.find((f) => f.id === id);
+            if (folder) {
+              supabase.auth.getSession().then(({ data: sessionData }) => {
+                if (sessionData.session) {
+                  const updateData: Record<string, any> = {};
+                  
+                  if (data.name !== undefined) updateData.name = data.name;
+                  if (data.parentId !== undefined) updateData.parent_id = data.parentId;
+                  
+                  supabase
+                    .from('folders')
+                    .update(updateData)
+                    .eq('id', id)
+                    .eq('user_id', sessionData.session.user.id)
+                    .then(({ error }) => {
+                      if (error) {
+                        console.error("Error updating folder in Supabase:", error);
+                      }
+                    });
+                }
+              });
+            }
+          }
         },
 
         deleteFolder: (id) => {
@@ -206,6 +356,46 @@ const useNoteStore = create<NoteState>()(
               expandedFolders: newExpandedFolders,
             };
           });
+          
+          // If user is authenticated, delete folder from Supabase
+          const { isSynced } = get();
+          if (isSynced) {
+            supabase.auth.getSession().then(({ data }) => {
+              if (data.session) {
+                // Delete the folder and let RLS handle the cascade
+                supabase
+                  .from('folders')
+                  .delete()
+                  .eq('id', id)
+                  .eq('user_id', data.session.user.id)
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error("Error deleting folder from Supabase:", error);
+                    }
+                  });
+                
+                // Update notes that were moved to parent folder
+                const { notes } = get();
+                const movedNotes = notes.filter(note => note.folderId === get().folders.find(f => f.id === id)?.parentId);
+                
+                for (const note of movedNotes) {
+                  supabase
+                    .from('notes')
+                    .update({ 
+                      folder_id: get().folders.find(f => f.id === id)?.parentId,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', note.id)
+                    .eq('user_id', data.session.user.id)
+                    .then(({ error }) => {
+                      if (error) {
+                        console.error("Error updating note folder in Supabase:", error);
+                      }
+                    });
+                }
+              }
+            });
+          }
         },
 
         toggleFolderExpanded: (folderId) => {
@@ -223,7 +413,7 @@ const useNoteStore = create<NoteState>()(
           return note?.folderId === folderId;
         },
         
-        syncWithSupabase: async (userId) => {
+        syncWithSupabase: async (userId: string) => {
           const { notes, folders } = get();
           
           set({ isLoading: true });
@@ -313,6 +503,16 @@ const useNoteStore = create<NoteState>()(
         },
         
         resetStore: () => {
+          const now = new Date().toISOString();
+          const defaultNote: Note = {
+            id: nanoid(),
+            title: "Untitled Note",
+            content: "",
+            createdAt: now,
+            updatedAt: now,
+            folderId: null,
+          };
+          
           set({
             notes: [defaultNote],
             folders: [],
