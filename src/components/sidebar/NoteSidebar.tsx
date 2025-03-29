@@ -1,31 +1,21 @@
-
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import useNoteStore from "@/store/noteStore";
-import useSettingsStore from "@/store/settingsStore";
-import { Folder, Note } from "@/types/notes";
-import {
-  FolderPlus,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { FolderPlus, Plus, Loader2 } from "lucide-react";
 import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/contexts/AuthContext";
 import { FolderItem } from "./FolderItem";
 import { NoteItem } from "./NoteItem";
+import { AuthStatus } from "../auth/AuthStatus";
 
 export function NoteSidebar() {
-  const { showNoteDates } = useSettingsStore();
-  const { user } = useAuth();
-
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
 
   const {
     notes,
@@ -139,9 +129,9 @@ export function NoteSidebar() {
         ) : notes.length === 0 && folders.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
             <p className="text-sm mb-2">You don't have any notes yet</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handleCreateNote(null)}
               className="mx-auto"
             >
@@ -162,7 +152,6 @@ export function NoteSidebar() {
                   expandedFolders={expandedFolders}
                   editingItemId={editingItemId}
                   editingName={editingName}
-                  showNoteDates={showNoteDates}
                   toggleFolderExpanded={toggleFolderExpanded}
                   handleCreateFolder={handleCreateFolder}
                   handleCreateNote={handleCreateNote}
@@ -185,7 +174,6 @@ export function NoteSidebar() {
                   activeNoteId={activeNoteId}
                   editingItemId={editingItemId}
                   editingName={editingName}
-                  showNoteDates={showNoteDates}
                   folders={folders}
                   setActiveNoteId={setActiveNoteId}
                   setEditingItemId={setEditingItemId}
@@ -199,6 +187,11 @@ export function NoteSidebar() {
           </div>
         )}
       </SidebarContent>
+      <SidebarFooter>
+        <div className="p-1 rounded-lg flex items-center">
+          <AuthStatus />
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }

@@ -94,6 +94,9 @@ importers:
       "@radix-ui/react-tooltip":
         specifier: ^1.1.8
         version: 1.1.8(@types/react-dom@18.3.5(@types/react@18.3.19))(@types/react@18.3.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      "@supabase/supabase-js":
+        specifier: ^2.49.3
+        version: 2.49.3
       "@tanstack/react-query":
         specifier: ^5.56.2
         version: 5.69.0(react@18.3.1)
@@ -175,9 +178,6 @@ importers:
       lucide-react:
         specifier: ^0.462.0
         version: 0.462.0(react@18.3.1)
-      nanoid:
-        specifier: ^5.1.5
-        version: 5.1.5
       next-themes:
         specifier: ^0.3.0
         version: 0.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -211,6 +211,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17)
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
       vaul:
         specifier: ^0.9.9
         version: 0.9.9(@types/react-dom@18.3.5(@types/react@18.3.19))(@types/react@18.3.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1900,6 +1903,49 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  "@supabase/auth-js@2.69.1":
+    resolution:
+      {
+        integrity: sha512-FILtt5WjCNzmReeRLq5wRs3iShwmnWgBvxHfqapC/VoljJl+W8hDAyFmf1NVw3zH+ZjZ05AKxiKxVeb0HNWRMQ==,
+      }
+
+  "@supabase/functions-js@2.4.4":
+    resolution:
+      {
+        integrity: sha512-WL2p6r4AXNGwop7iwvul2BvOtuJ1YQy8EbOd0dhG1oN1q8el/BIRSFCFnWAMM/vJJlHWLi4ad22sKbKr9mvjoA==,
+      }
+
+  "@supabase/node-fetch@2.6.15":
+    resolution:
+      {
+        integrity: sha512-1ibVeYUacxWYi9i0cf5efil6adJ9WRyZBLivgjs+AUpewx1F3xPi7gLgaASI2SmIQxPoCEjAsLAzKPgMJVgOUQ==,
+      }
+    engines: { node: 4.x || >=6.0.0 }
+
+  "@supabase/postgrest-js@1.19.2":
+    resolution:
+      {
+        integrity: sha512-MXRbk4wpwhWl9IN6rIY1mR8uZCCG4MZAEji942ve6nMwIqnBgBnZhZlON6zTTs6fgveMnoCILpZv1+K91jN+ow==,
+      }
+
+  "@supabase/realtime-js@2.11.2":
+    resolution:
+      {
+        integrity: sha512-u/XeuL2Y0QEhXSoIPZZwR6wMXgB+RQbJzG9VErA3VghVt7uRfSVsjeqd7m5GhX3JR6dM/WRmLbVR8URpDWG4+w==,
+      }
+
+  "@supabase/storage-js@2.7.1":
+    resolution:
+      {
+        integrity: sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==,
+      }
+
+  "@supabase/supabase-js@2.49.3":
+    resolution:
+      {
+        integrity: sha512-42imTuAm9VEQGlXT0O6zrSwNnsIblU1eieqrAWj8HSmFaYkxepk/IuUVw1M5hKelk0ZYlqDKNwRErI1rF1EL4w==,
+      }
+
   "@swc/core-darwin-arm64@1.11.11":
     resolution:
       {
@@ -2300,6 +2346,12 @@ packages:
         integrity: sha512-I6LPUvlRH+O6VRUqYOcMudhaIdUVWfsjnZavnsraHvpBwaEyMN29ry+0UVJhImYL16xsscu0aske3yA+uPOWfw==,
       }
 
+  "@types/phoenix@1.6.6":
+    resolution:
+      {
+        integrity: sha512-PIzZZlEppgrpoT2QgbnDU+MMzuR6BbCjllj0bM70lWoejMeNJAxCchxnv7J3XFkI8MpygtRpzXrIlmWUBclP5A==,
+      }
+
   "@types/prop-types@15.7.14":
     resolution:
       {
@@ -2324,6 +2376,12 @@ packages:
     resolution:
       {
         integrity: sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg==,
+      }
+
+  "@types/ws@8.18.0":
+    resolution:
+      {
+        integrity: sha512-8svvI3hMyvN0kKCJMvTJP/x6Y/EoQbepff882wL+Sn5QsXb3etnamgrJq4isrBxSJj5L2AuXcI0+bgkoAXGUJw==,
       }
 
   "@typescript-eslint/eslint-plugin@8.27.0":
@@ -3448,14 +3506,6 @@ packages:
     engines: { node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1 }
     hasBin: true
 
-  nanoid@5.1.5:
-    resolution:
-      {
-        integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==,
-      }
-    engines: { node: ^18 || >=20 }
-    hasBin: true
-
   natural-compare@1.4.0:
     resolution:
       {
@@ -4190,6 +4240,12 @@ packages:
       }
     engines: { node: ">=8.0" }
 
+  tr46@0.0.3:
+    resolution:
+      {
+        integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==,
+      }
+
   ts-api-utils@2.1.0:
     resolution:
       {
@@ -4303,6 +4359,13 @@ packages:
         integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==,
       }
 
+  uuid@11.1.0:
+    resolution:
+      {
+        integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==,
+      }
+    hasBin: true
+
   vaul@0.9.9:
     resolution:
       {
@@ -4358,6 +4421,18 @@ packages:
         integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==,
       }
 
+  webidl-conversions@3.0.1:
+    resolution:
+      {
+        integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==,
+      }
+
+  whatwg-url@5.0.0:
+    resolution:
+      {
+        integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==,
+      }
+
   which@2.0.2:
     resolution:
       {
@@ -4386,6 +4461,21 @@ packages:
         integrity: sha512-si7QWI6zUMq56bESFvagtmzMdGOtoxfR+Sez11Mobfc7tm+VkUckk9bW2UeffTGVUbOksxmSw0AA2gs8g71NCQ==,
       }
     engines: { node: ">=12" }
+
+  ws@8.18.1:
+    resolution:
+      {
+        integrity: sha512-RKW2aJZMXeMxVpnZ6bck+RswznaxmzdULiBr6KY7XkTnW8uvt0iT9H5DkHUChXrc+uurzwa0rVI16n/Xzjdz1w==,
+      }
+    engines: { node: ">=10.0.0" }
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: ">=5.0.2"
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   yaml@2.7.0:
     resolution:
@@ -5436,6 +5526,48 @@ snapshots:
   "@rollup/rollup-win32-x64-msvc@4.36.0":
     optional: true
 
+  "@supabase/auth-js@2.69.1":
+    dependencies:
+      "@supabase/node-fetch": 2.6.15
+
+  "@supabase/functions-js@2.4.4":
+    dependencies:
+      "@supabase/node-fetch": 2.6.15
+
+  "@supabase/node-fetch@2.6.15":
+    dependencies:
+      whatwg-url: 5.0.0
+
+  "@supabase/postgrest-js@1.19.2":
+    dependencies:
+      "@supabase/node-fetch": 2.6.15
+
+  "@supabase/realtime-js@2.11.2":
+    dependencies:
+      "@supabase/node-fetch": 2.6.15
+      "@types/phoenix": 1.6.6
+      "@types/ws": 8.18.0
+      ws: 8.18.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  "@supabase/storage-js@2.7.1":
+    dependencies:
+      "@supabase/node-fetch": 2.6.15
+
+  "@supabase/supabase-js@2.49.3":
+    dependencies:
+      "@supabase/auth-js": 2.69.1
+      "@supabase/functions-js": 2.4.4
+      "@supabase/node-fetch": 2.6.15
+      "@supabase/postgrest-js": 1.19.2
+      "@supabase/realtime-js": 2.11.2
+      "@supabase/storage-js": 2.7.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   "@swc/core-darwin-arm64@1.11.11":
     optional: true
 
@@ -5661,6 +5793,8 @@ snapshots:
     dependencies:
       undici-types: 6.20.0
 
+  "@types/phoenix@1.6.6": {}
+
   "@types/prop-types@15.7.14": {}
 
   "@types/react-dom@18.3.5(@types/react@18.3.19)":
@@ -5673,6 +5807,10 @@ snapshots:
       csstype: 3.1.3
 
   "@types/use-sync-external-store@0.0.6": {}
+
+  "@types/ws@8.18.0":
+    dependencies:
+      "@types/node": 22.13.10
 
   "@typescript-eslint/eslint-plugin@8.27.0(@typescript-eslint/parser@8.27.0(eslint@9.22.0(jiti@1.21.7))(typescript@5.8.2))(eslint@9.22.0(jiti@1.21.7))(typescript@5.8.2)":
     dependencies:
@@ -6364,8 +6502,6 @@ snapshots:
 
   nanoid@3.3.11: {}
 
-  nanoid@5.1.5: {}
-
   natural-compare@1.4.0: {}
 
   next-themes@0.3.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
@@ -6850,6 +6986,8 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
+  tr46@0.0.3: {}
+
   ts-api-utils@2.1.0(typescript@5.8.2):
     dependencies:
       typescript: 5.8.2
@@ -6909,6 +7047,8 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
+  uuid@11.1.0: {}
+
   vaul@0.9.9(@types/react-dom@18.3.5(@types/react@18.3.19))(@types/react@18.3.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       "@radix-ui/react-dialog": 1.1.6(@types/react-dom@18.3.5(@types/react@18.3.19))(@types/react@18.3.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -6946,6 +7086,13 @@ snapshots:
 
   w3c-keyname@2.2.8: {}
 
+  webidl-conversions@3.0.1: {}
+
+  whatwg-url@5.0.0:
+    dependencies:
+      tr46: 0.0.3
+      webidl-conversions: 3.0.1
+
   which@2.0.2:
     dependencies:
       isexe: 2.0.0
@@ -6963,6 +7110,8 @@ snapshots:
       ansi-styles: 6.2.1
       string-width: 5.1.2
       strip-ansi: 7.1.0
+
+  ws@8.18.1: {}
 
   yaml@2.7.0: {}
 

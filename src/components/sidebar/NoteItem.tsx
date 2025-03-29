@@ -1,17 +1,16 @@
-
 import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Note, Folder } from "@/types/notes";
 import { EditableItem } from "./EditableItem";
 import { NoteContextMenu } from "./NoteContextMenu";
+import { useSettingsStore } from "@/store/settingsStore";
 
 interface NoteItemProps {
   note: Note;
   activeNoteId: string | null;
   editingItemId: string | null;
   editingName: string;
-  showNoteDates: boolean;
   folders: Folder[];
   setActiveNoteId: (id: string | null) => void;
   setEditingItemId: (id: string | null) => void;
@@ -26,7 +25,6 @@ export function NoteItem({
   activeNoteId,
   editingItemId,
   editingName,
-  showNoteDates,
   folders,
   setActiveNoteId,
   setEditingItemId,
@@ -35,6 +33,7 @@ export function NoteItem({
   moveNote,
   deleteNote,
 }: NoteItemProps) {
+  const showNoteDates = useSettingsStore((state) => state.showNoteDates);
   return (
     <div
       key={note.id}

@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { SignInButton } from "./SignInButton";
 import { UserMenu } from "./UserMenu";

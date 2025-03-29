@@ -1,4 +1,3 @@
-
 import { NoteSidebar } from "./NoteSidebar";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { Settings as SettingsIcon } from "lucide-react";
@@ -14,6 +13,7 @@ import HeaderActions from "./HeaderActions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import useNoteStore from "@/store/noteStore";
+import { AuthStatus } from "./auth/AuthStatus";
 
 export function NoteLayout() {
   const { user, loading } = useAuth();
@@ -32,7 +32,7 @@ export function NoteLayout() {
         resetStore();
       }
     };
-    
+
     syncData();
   }, [user, loading, syncWithSupabase, resetStore, isSynced]);
 

@@ -1,5 +1,3 @@
-
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +25,6 @@ interface FolderItemProps {
   expandedFolders: Record<string, boolean>;
   editingItemId: string | null;
   editingName: string;
-  showNoteDates: boolean;
   toggleFolderExpanded: (folderId: string) => void;
   handleCreateFolder: (parentId: string | null) => void;
   handleCreateNote: (parentId: string | null) => void;
@@ -50,7 +47,6 @@ export function FolderItem({
   expandedFolders,
   editingItemId,
   editingName,
-  showNoteDates,
   toggleFolderExpanded,
   handleCreateFolder,
   handleCreateNote,
@@ -66,7 +62,7 @@ export function FolderItem({
 }: FolderItemProps) {
   // Ensure isExpanded is a boolean
   const isExpanded = !!expandedFolders[folder.id];
-  
+
   // Find child folders and notes
   const subfolders = folders.filter((f) => f.parentId === folder.id);
   const folderNotes = notes.filter((note) => note.folderId === folder.id);
@@ -170,7 +166,6 @@ export function FolderItem({
                 expandedFolders={expandedFolders}
                 editingItemId={editingItemId}
                 editingName={editingName}
-                showNoteDates={showNoteDates}
                 toggleFolderExpanded={toggleFolderExpanded}
                 handleCreateFolder={handleCreateFolder}
                 handleCreateNote={handleCreateNote}
@@ -194,7 +189,6 @@ export function FolderItem({
                 activeNoteId={activeNoteId}
                 editingItemId={editingItemId}
                 editingName={editingName}
-                showNoteDates={showNoteDates}
                 folders={folders}
                 setActiveNoteId={setActiveNoteId}
                 setEditingItemId={setEditingItemId}

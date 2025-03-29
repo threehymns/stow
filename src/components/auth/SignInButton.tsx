@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,8 +6,8 @@ export function SignInButton() {
   const { signIn, loading } = useAuth();
 
   return (
-    <Button 
-      onClick={signIn} 
+    <Button
+      onClick={signIn}
       disabled={loading}
       variant="outline"
       className="text-sm"

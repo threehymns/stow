@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,7 +12,9 @@ import { Link } from "react-router-dom";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
-  const initials = user?.email ? user.email.substring(0, 2).toUpperCase() : "??";
+  const initials = user?.email
+    ? user.email.substring(0, 2).toUpperCase()
+    : "??";
   const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
@@ -29,20 +30,24 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <div className="flex items-center justify-start gap-2 p-2">
           <div className="flex flex-col space-y-1 leading-none">
-            {user?.email && (
-              <p className="font-medium">{user.email}</p>
-            )}
+            {user?.email && <p className="font-medium">{user.email}</p>}
           </div>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex w-full cursor-pointer items-center">
+          <Link
+            to="/settings"
+            className="flex w-full cursor-pointer items-center"
+          >
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem
+          onClick={signOut}
+          className="text-destructive focus:text-destructive"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Sign out</span>
         </DropdownMenuItem>
