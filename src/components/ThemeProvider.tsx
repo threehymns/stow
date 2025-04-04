@@ -14,7 +14,7 @@ type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   systemTheme: Theme;
-  getSetting: <T extends string | boolean>(key: string) => T;
+  getSetting: <T extends string | boolean | number>(key: string) => T;
 };
 
 const initialState: ThemeProviderState = {
@@ -34,7 +34,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const { getSetting } = useSettingsStore();
   const [theme, setTheme] = useState<Theme>(
-    () => (getSetting("theme") as Theme) || defaultTheme
+    () => (getSetting<Theme>("theme")) || defaultTheme
   );
   const [systemTheme, setSystemTheme] = useState<Theme>(
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
@@ -52,7 +52,7 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    const storedTheme = getSetting("theme") as Theme;
+    const storedTheme = getSetting<Theme>("theme");
     const resolvedTheme = storedTheme || defaultTheme;
 
     setTheme(resolvedTheme);

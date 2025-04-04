@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useEditor, EditorContent, createDocument } from "@tiptap/react";
 import Document from "@tiptap/extension-document";
@@ -23,6 +24,7 @@ import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
 import { updateNote as updateNoteService } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext";
+import { debounce } from "@/lib/utils";
 
 export function MarkdownEditor() {
   const {
@@ -30,6 +32,7 @@ export function MarkdownEditor() {
     activeNoteId,
     updateNoteLocal,
     setActiveNoteId,
+    realtimeEnabled
   } = useNoteStore();
 
   const { user } = useAuth();
@@ -39,6 +42,7 @@ export function MarkdownEditor() {
   const [title, setTitle] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const isLocalUpdate = useRef(false);
 
   useEffect(() => {
     if (activeNote) {
@@ -48,6 +52,25 @@ export function MarkdownEditor() {
       setActiveNoteId(null);
     }
   }, [activeNote, activeNoteId, setActiveNoteId]);
+
+  // Create a debounced save function to avoid too many requests
+  const debouncedSaveNote = useRef(
+    debounce(async (noteId: string, data: Partial<typeof activeNote>, userId: string) => {
+      try {
+        setIsSaving(true);
+        isLocalUpdate.current = true;
+        await updateNoteService(noteId, data, userId);
+        console.log("Note saved to Supabase:", data);
+      } catch (error) {
+        console.error("Failed to update note:", error);
+      } finally {
+        setIsSaving(false);
+        setTimeout(() => {
+          isLocalUpdate.current = false;
+        }, 500); // Release the local update flag after a short delay
+      }
+    }, 500)
+  ).current;
 
   const editor = useEditor({
     extensions: [
@@ -89,14 +112,24 @@ export function MarkdownEditor() {
         updateNoteLocal(activeNoteId, { content });
         
         if (user?.id) {
-          setIsSaving(true);
-          updateNoteService(activeNoteId, { content }, user.id)
-            .catch((error) => console.error("Failed to update note content:", error))
-            .finally(() => setIsSaving(false));
+          debouncedSaveNote(activeNoteId, { content }, user.id);
         }
       }
     },
   });
+
+  // Update editor content when activeNote changes or is updated by another client
+  useEffect(() => {
+    if (editor && activeNote && !isLocalUpdate.current) {
+      const currentContent = editor.getHTML();
+      
+      // Only update if the content actually changed and it's not from a local edit
+      if (activeNote.content !== currentContent) {
+        console.log("Updating editor with new content from remote");
+        editor.commands.setContent(activeNote.content || "");
+      }
+    }
+  }, [editor, activeNote, realtimeEnabled]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
@@ -106,10 +139,7 @@ export function MarkdownEditor() {
       updateNoteLocal(activeNoteId, { title: newTitle });
       
       if (user?.id) {
-        setIsSaving(true);
-        updateNoteService(activeNoteId, { title: newTitle }, user.id)
-          .catch((error) => console.error("Failed to update note title:", error))
-          .finally(() => setIsSaving(false));
+        debouncedSaveNote(activeNoteId, { title: newTitle }, user.id);
       }
     }
   };

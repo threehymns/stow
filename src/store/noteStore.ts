@@ -37,6 +37,7 @@ interface NoteState {
   loadingStates: LoadingStates;
   errorStates: ErrorStates;
   realtimeEnabled: boolean;
+  lastSyncTimestamp: string | null;
 
   setActiveNoteId: (id: string | null) => void;
   createNoteLocal: (folderId?: string | null) => string;
@@ -75,9 +76,15 @@ const useNoteStore = create<NoteState>()(
       const setupRealtimeSubscription = () => {
         // Clean up existing subscription if any
         if (realtimeChannel) {
-          supabase.removeChannel(realtimeChannel);
+          try {
+            supabase.removeChannel(realtimeChannel);
+          } catch (error) {
+            console.error("Error removing channel:", error);
+          }
         }
 
+        console.log("Setting up realtime subscription...");
+        
         // Create a new realtime channel
         realtimeChannel = supabase.channel('notes-realtime')
           .on('postgres_changes', { 
@@ -87,11 +94,9 @@ const useNoteStore = create<NoteState>()(
           }, (payload) => {
             console.log('Realtime update for notes:', payload);
             
-            // Check if the operation is happening from this client by checking lastUserAction state
-            // If it matches, we can skip processing to avoid duplicate operations
+            // Handle different event types
             const { eventType, new: newRecord, old: oldRecord } = payload;
             
-            // Handle different event types
             if (eventType === 'INSERT') {
               const newNote: Note = {
                 id: newRecord.id,
@@ -106,7 +111,8 @@ const useNoteStore = create<NoteState>()(
               const { notes } = get();
               if (!notes.some(note => note.id === newNote.id)) {
                 set(state => ({
-                  notes: [newNote, ...state.notes]
+                  notes: [newNote, ...state.notes],
+                  lastSyncTimestamp: getCurrentTimestamp()
                 }));
               }
             } 
@@ -122,13 +128,24 @@ const useNoteStore = create<NoteState>()(
                         folderId: newRecord.folder_id,
                       } 
                     : note
-                )
+                ),
+                lastSyncTimestamp: getCurrentTimestamp()
               }));
             } 
             else if (eventType === 'DELETE') {
-              set(state => ({
-                notes: state.notes.filter(note => note.id !== oldRecord.id)
-              }));
+              const { activeNoteId } = get();
+              const deletedNoteId = oldRecord.id;
+              
+              set(state => {
+                const filteredNotes = state.notes.filter(note => note.id !== deletedNoteId);
+                return {
+                  notes: filteredNotes,
+                  activeNoteId: activeNoteId === deletedNoteId 
+                    ? (filteredNotes.length > 0 ? filteredNotes[0].id : null) 
+                    : activeNoteId,
+                  lastSyncTimestamp: getCurrentTimestamp()
+                };
+              });
             }
           })
           .on('postgres_changes', { 
@@ -152,7 +169,8 @@ const useNoteStore = create<NoteState>()(
               const { folders } = get();
               if (!folders.some(folder => folder.id === newFolder.id)) {
                 set(state => ({
-                  folders: [...state.folders, newFolder]
+                  folders: [...state.folders, newFolder],
+                  lastSyncTimestamp: getCurrentTimestamp()
                 }));
               }
             } 
@@ -166,17 +184,25 @@ const useNoteStore = create<NoteState>()(
                         parentId: newRecord.parent_id,
                       } 
                     : folder
-                )
+                ),
+                lastSyncTimestamp: getCurrentTimestamp()
               }));
             } 
             else if (eventType === 'DELETE') {
               set(state => ({
-                folders: state.folders.filter(folder => folder.id !== oldRecord.id)
+                folders: state.folders.filter(folder => folder.id !== oldRecord.id),
+                lastSyncTimestamp: getCurrentTimestamp()
               }));
             }
           })
           .subscribe(status => {
             console.log('Realtime subscription status:', status);
+            if (status === 'SUBSCRIBED') {
+              console.log('Successfully subscribed to realtime changes');
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error('Error subscribing to realtime changes');
+              set({ realtimeEnabled: false });
+            }
           });
 
         return realtimeChannel;
@@ -190,6 +216,7 @@ const useNoteStore = create<NoteState>()(
         isLoading: false,
         isSynced: false,
         realtimeEnabled: false,
+        lastSyncTimestamp: null,
         loadingStates: {
           createNote: false,
           updateNote: false,
@@ -212,11 +239,15 @@ const useNoteStore = create<NoteState>()(
 
         disableRealtime: () => {
           if (realtimeChannel) {
-            supabase.removeChannel(realtimeChannel);
-            realtimeChannel = null;
+            try {
+              supabase.removeChannel(realtimeChannel);
+              realtimeChannel = null;
+              console.log("Real-time sync disabled in store");
+            } catch (error) {
+              console.error("Error removing channel:", error);
+            }
           }
           set({ realtimeEnabled: false });
-          console.log("Real-time sync disabled in store");
         },
 
         setActiveNoteId: (id) => {
@@ -394,6 +425,7 @@ const useNoteStore = create<NoteState>()(
             activeNoteId: defaultNote.id,
             expandedFolders: { root: true },
             isSynced: false,
+            lastSyncTimestamp: null,
             loadingStates: {
               createNote: false,
               updateNote: false,

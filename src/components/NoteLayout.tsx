@@ -28,7 +28,8 @@ export function NoteLayout() {
     activeNoteId, 
     enableRealtime, 
     disableRealtime,
-    realtimeEnabled
+    realtimeEnabled,
+    lastSyncTimestamp
   } = useNoteStore();
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -55,6 +56,7 @@ export function NoteLayout() {
               folders: syncedFolders,
               activeNoteId: syncedNotes.length > 0 ? syncedNotes[0].id : null,
               isSynced: true,
+              lastSyncTimestamp: new Date().toISOString()
             });
             
             // Enable real-time sync after initial data sync
@@ -87,8 +89,8 @@ export function NoteLayout() {
     
     // Ensure real-time sync remains enabled if user is authenticated
     if (user && !loading && isSynced && !realtimeEnabled) {
-      enableRealtime();
       console.log("Re-enabling real-time sync");
+      enableRealtime();
     }
     
     // Cleanup real-time subscription when component unmounts
@@ -96,6 +98,14 @@ export function NoteLayout() {
       isActive = false;
     };
   }, [user, loading, resetStore, isSynced, enableRealtime, disableRealtime, realtimeEnabled, notes, folders, isSyncing]);
+
+  // Re-establish realtime connection if it was disabled
+  useEffect(() => {
+    if (user && isSynced && !realtimeEnabled) {
+      console.log("Real-time sync was disabled, re-enabling...");
+      enableRealtime();
+    }
+  }, [user, isSynced, realtimeEnabled, enableRealtime]);
 
   return (
     <div className="flex h-screen overflow-hidden">
