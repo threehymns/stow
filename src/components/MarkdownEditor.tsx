@@ -38,6 +38,7 @@ export function MarkdownEditor() {
 
   const [title, setTitle] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (activeNote) {
@@ -86,10 +87,12 @@ export function MarkdownEditor() {
       if (activeNoteId && isInitialized) {
         const content = editor.getHTML();
         updateNoteLocal(activeNoteId, { content });
+        
         if (user?.id) {
-          updateNoteService(activeNoteId, { content }, user.id).catch((error) =>
-            console.error("Failed to update note content:", error),
-          );
+          setIsSaving(true);
+          updateNoteService(activeNoteId, { content }, user.id)
+            .catch((error) => console.error("Failed to update note content:", error))
+            .finally(() => setIsSaving(false));
         }
       }
     },
@@ -101,10 +104,12 @@ export function MarkdownEditor() {
 
     if (activeNoteId && isInitialized) {
       updateNoteLocal(activeNoteId, { title: newTitle });
+      
       if (user?.id) {
-        updateNoteService(activeNoteId, { title: newTitle }, user.id).catch(
-          (error) => console.error("Failed to update note title:", error),
-        );
+        setIsSaving(true);
+        updateNoteService(activeNoteId, { title: newTitle }, user.id)
+          .catch((error) => console.error("Failed to update note title:", error))
+          .finally(() => setIsSaving(false));
       }
     }
   };
@@ -152,16 +157,16 @@ export function MarkdownEditor() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  editor.commands.focus("start");
-                  editor.commands.enter();
-                  editor.commands.focus("start");
+                  editor?.commands.focus("start");
+                  editor?.commands.enter();
+                  editor?.commands.focus("start");
                 }
               }}
             />
             <EditorContent editor={editor} />
             <div
               className="min-h-[calc(100vh-15em)]"
-              onClick={() => editor.commands.focus("end")}
+              onClick={() => editor?.commands.focus("end")}
             />
           </div>
         </motion.div>

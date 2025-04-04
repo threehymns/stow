@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
@@ -88,6 +87,8 @@ const useNoteStore = create<NoteState>()(
           }, (payload) => {
             console.log('Realtime update for notes:', payload);
             
+            // Check if the operation is happening from this client by checking lastUserAction state
+            // If it matches, we can skip processing to avoid duplicate operations
             const { eventType, new: newRecord, old: oldRecord } = payload;
             
             // Handle different event types
@@ -202,8 +203,11 @@ const useNoteStore = create<NoteState>()(
         errorStates: {},
 
         enableRealtime: () => {
-          setupRealtimeSubscription();
-          set({ realtimeEnabled: true });
+          const channel = setupRealtimeSubscription();
+          if (channel) {
+            set({ realtimeEnabled: true });
+            console.log("Real-time sync enabled in store");
+          }
         },
 
         disableRealtime: () => {
@@ -212,6 +216,7 @@ const useNoteStore = create<NoteState>()(
             realtimeChannel = null;
           }
           set({ realtimeEnabled: false });
+          console.log("Real-time sync disabled in store");
         },
 
         setActiveNoteId: (id) => {
