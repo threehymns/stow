@@ -7,13 +7,26 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { SidebarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
+import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService, syncNotesAndFolders } from "@/services/noteService";
+import { Note, Folder } from "@/types/notes";
 
 const HeaderActions = () => {
-  const { createFolder, createNote, syncWithSupabase, isLoading } =
-    useNoteStore();
+  const {
+    notes,
+    folders,
+    createNoteLocal,
+    createFolderLocal,
+    setActiveNoteId,
+    isLoading,
+  } = useNoteStore();
+
   const { user } = useAuth();
   const sidebar = useSidebar();
+
   const MotionButton = React.useMemo(() => motion.create(Button), []);
+
   const list = React.useMemo(
     () => ({
       visible: {
@@ -27,6 +40,7 @@ const HeaderActions = () => {
     }),
     [],
   );
+
   const item = React.useMemo(
     () => ({
       visible: {
@@ -40,17 +54,73 @@ const HeaderActions = () => {
     }),
     [],
   );
-  const handleCreateFolder = () => {
-    const newFolderId = createFolder("New Folder", null);
-    console.log("Created new folder with ID:", newFolderId);
+
+  const handleCreateFolder = async () => {
+    const now = getCurrentTimestamp();
+    const newFolder: Folder = {
+      id: uuidv4(),
+      name: `New Folder ${folders.length}`,
+      createdAt: now,
+      parentId: null,
+    };
+
+    try {
+      if (user?.id) {
+        await createFolderService(newFolder, user.id);
+      }
+      createFolderLocal(newFolder.name);
+      toast.success("New folder created");
+    } catch (error: any) {
+      console.error("Failed to create folder:", error);
+      toast.error("Failed to create folder");
+    }
   };
-  const handleCreateNote = () => {
-    const newNoteId = createNote(null);
-    console.log("Created new note with ID:", newNoteId);
+
+  const handleCreateNote = async () => {
+    const now = getCurrentTimestamp();
+    const newNote: Note = {
+      id: uuidv4(),
+      title: "Untitled Note",
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+      folderId: null,
+    };
+
+    try {
+      if (user?.id) {
+        await createNoteService(newNote, user.id);
+      }
+      createNoteLocal();
+      toast.success("New note created");
+    } catch (error: any) {
+      console.error("Failed to create note:", error);
+      toast.error("Failed to create note");
+    }
   };
+
   const handleSync = async () => {
-    if (user) {
-      await syncWithSupabase(user.id);
+    if (!user?.id) return;
+
+    try {
+      useNoteStore.setState({ isLoading: true });
+      const { notes: syncedNotes, folders: syncedFolders } = await syncNotesAndFolders(
+        user.id,
+        notes,
+        folders,
+      );
+      useNoteStore.setState({
+        notes: syncedNotes,
+        folders: syncedFolders,
+        activeNoteId: syncedNotes.length > 0 ? syncedNotes[0].id : null,
+        isSynced: true,
+      });
+      toast.success("Notes synchronized");
+    } catch (error: any) {
+      console.error("Failed to sync notes:", error);
+      toast.error("Failed to sync notes");
+    } finally {
+      useNoteStore.setState({ isLoading: false });
     }
   };
 

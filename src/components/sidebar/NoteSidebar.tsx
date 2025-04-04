@@ -12,6 +12,8 @@ import {
 import { FolderItem } from "./FolderItem";
 import { NoteItem } from "./NoteItem";
 import { AuthStatus } from "../auth/AuthStatus";
+import { updateNote as updateNoteService } from "@/services/noteService";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function NoteSidebar() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -24,18 +26,20 @@ export function NoteSidebar() {
     expandedFolders,
     isLoading,
     setActiveNoteId,
-    createNote,
-    deleteNote,
-    createFolder,
-    updateFolder,
-    deleteFolder,
+    createNoteLocal,
+    deleteNoteLocal,
+    createFolderLocal,
+    updateFolderLocal,
+    deleteFolderLocal,
     toggleFolderExpanded,
-    moveNote,
-    updateNote,
+    moveNoteLocal,
+    updateNoteLocal,
   } = useNoteStore();
 
+  const { user } = useAuth();
+
   const handleCreateFolder = (parentId: string | null) => {
-    const newFolderId = createFolder("New Folder", parentId);
+    const newFolderId = createFolderLocal("New Folder", parentId);
     setEditingItemId(newFolderId);
     const untitledCount = folders.filter(
       (n) => n.parentId === parentId && n.name.startsWith("New Folder"),
@@ -44,7 +48,7 @@ export function NoteSidebar() {
   };
 
   const handleCreateNote = (parentId: string | null) => {
-    const newNoteId = createNote(parentId);
+    const newNoteId = createNoteLocal(parentId);
     setEditingItemId(newNoteId);
     const untitledCount = notes.filter(
       (n) => n.folderId === parentId && n.title.startsWith("Untitled Note"),
@@ -77,9 +81,14 @@ export function NoteSidebar() {
 
     const folder = folders.find((f) => f.id === editingItemId);
     if (folder) {
-      updateFolder(editingItemId, { name: editingName });
+      updateFolderLocal(editingItemId, { name: editingName });
     } else {
-      updateNote(editingItemId, { title: editingName });
+      updateNoteLocal(editingItemId, { title: editingName });
+      if (user?.id) {
+        updateNoteService(editingItemId, { title: editingName }, user.id).catch(
+          (error) => console.error("Failed to update note title:", error),
+        );
+      }
     }
     setEditingItemId(null);
   };
@@ -158,11 +167,11 @@ export function NoteSidebar() {
                   setEditingItemId={setEditingItemId}
                   setEditingName={setEditingName}
                   handleRenameSubmit={handleRenameSubmit}
-                  updateFolder={updateFolder}
-                  deleteFolder={deleteFolder}
+                  updateFolder={updateFolderLocal}
+                  deleteFolder={deleteFolderLocal}
                   setActiveNoteId={setActiveNoteId}
-                  moveNote={moveNote}
-                  deleteNote={deleteNote}
+                  moveNote={moveNoteLocal}
+                  deleteNote={deleteNoteLocal}
                   wouldCreateCycle={wouldCreateCycle}
                 />
               ))}
@@ -179,8 +188,8 @@ export function NoteSidebar() {
                   setEditingItemId={setEditingItemId}
                   setEditingName={setEditingName}
                   handleRenameSubmit={handleRenameSubmit}
-                  moveNote={moveNote}
-                  deleteNote={deleteNote}
+                  moveNote={moveNoteLocal}
+                  deleteNote={deleteNoteLocal}
                 />
               ))}
             </div>

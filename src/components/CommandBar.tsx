@@ -20,17 +20,26 @@ import {
 import { SettingCategory, SettingType } from "@/types/settings";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { v4 as uuidv4 } from "uuid";
+import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService } from "@/services/noteService";
+import { useAuth } from "@/contexts/AuthContext"; // Assuming this exists
+import { Note, Folder } from "@/types/notes";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
-  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(
-    null,
-  );
+  const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(null);
   const navigate = useNavigate();
 
-  const { notes, folders, setActiveNoteId, createNote, createFolder } =
-    useNoteStore();
+  const {
+    notes,
+    folders,
+    setActiveNoteId,
+    createNoteLocal,
+    createFolderLocal,
+  } = useNoteStore();
+
   const { getSetting, setSetting } = useSettingsStore();
+  const { user } = useAuth();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -74,6 +83,50 @@ export function CommandBar() {
     >,
   );
 
+  const handleCreateNote = async (folderId: string | null = null) => {
+    const now = getCurrentTimestamp();
+    const newNote: Note = {
+      id: uuidv4(),
+      title: "Untitled Note",
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+      folderId,
+    };
+
+    try {
+      if (user?.id) {
+        await createNoteService(newNote, user.id);
+      }
+      createNoteLocal(folderId);
+      toast.success("New note created");
+    } catch (error: any) {
+      console.error("Failed to create note:", error);
+      toast.error("Failed to create note");
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    const now = getCurrentTimestamp();
+    const newFolder: Folder = {
+      id: uuidv4(),
+      name: `New Folder ${folders.length}`,
+      createdAt: now,
+      parentId: null,
+    };
+
+    try {
+      if (user?.id) {
+        await createFolderService(newFolder, user.id);
+      }
+      createFolderLocal(newFolder.name);
+      toast.success("New folder created");
+    } catch (error: any) {
+      console.error("Failed to create folder:", error);
+      toast.error("Failed to create folder");
+    }
+  };
+
   return (
     <>
       <CommandDialog open={open} onOpenChange={setOpen}>
@@ -103,8 +156,7 @@ export function CommandBar() {
             <CommandItem
               onSelect={() =>
                 runCommand(() => {
-                  createNote();
-                  toast("New note created");
+                  handleCreateNote();
                 })
               }
             >
@@ -119,26 +171,25 @@ export function CommandBar() {
             {folders
               .filter((f) => f.id !== "root")
               .slice(0, 3)
-              .map((folder) => (
-                <CommandItem
-                  key={folder.id}
-                  onSelect={() =>
-                    runCommand(() => {
-                      createNote(folder.id);
-                      toast(`New note created in ${folder.name}`);
-                    })
-                  }
-                >
-                  <FolderPlus className="mr-2 h-4 w-4" />
-                  <span>New note in {folder.name}</span>
-                </CommandItem>
-              ))}
+              .map((folder) => {
+                return (
+                  <CommandItem
+                    key={folder.id}
+                    onSelect={() =>
+                      runCommand(() => {
+                        handleCreateNote(folder.id);
+                      })
+                    }
+                  >
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    <span>New note in {folder.name}</span>
+                  </CommandItem>
+                );
+              })}
             <CommandItem
               onSelect={() =>
                 runCommand(() => {
-                  const name = `New Folder ${folders.length}`;
-                  createFolder(name);
-                  toast("New folder created");
+                  handleCreateFolder();
                 })
               }
             >

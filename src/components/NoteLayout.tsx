@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import HeaderActions from "./HeaderActions";
+import { syncNotesAndFolders } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import useNoteStore from "@/store/noteStore";
@@ -17,7 +18,7 @@ import { AuthStatus } from "./auth/AuthStatus";
 
 export function NoteLayout() {
   const { user, loading } = useAuth();
-  const { syncWithSupabase, resetStore, isSynced } = useNoteStore();
+  const { notes, folders, resetStore, isSynced } = useNoteStore();
 
   // Sync notes with Supabase when user signs in
   useEffect(() => {
@@ -25,7 +26,17 @@ export function NoteLayout() {
       if (user && !loading && !isSynced) {
         console.log("Syncing with Supabase for user:", user.id);
         // Sync with Supabase when user is authenticated
-        await syncWithSupabase(user.id);
+        const { notes: syncedNotes, folders: syncedFolders } = await syncNotesAndFolders(
+          user.id,
+          notes,
+          folders,
+        );
+        useNoteStore.setState({
+          notes: syncedNotes,
+          folders: syncedFolders,
+          activeNoteId: syncedNotes.length > 0 ? syncedNotes[0].id : null,
+          isSynced: true,
+        });
       } else if (!user && !loading) {
         console.log("User not authenticated, resetting store");
         // Reset store when user signs out
@@ -34,7 +45,7 @@ export function NoteLayout() {
     };
 
     syncData();
-  }, [user, loading, syncWithSupabase, resetStore, isSynced]);
+  }, [user, loading, resetStore, isSynced]);
 
   return (
     <div className="flex h-screen overflow-hidden">

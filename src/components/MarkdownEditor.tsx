@@ -20,9 +20,19 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { EditorToolbar } from "./EditorToolbar";
 import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
+import { updateNote as updateNoteService } from "@/services/noteService";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function MarkdownEditor() {
-  const { notes, activeNoteId, updateNote, setActiveNoteId } = useNoteStore();
+  const {
+    notes,
+    activeNoteId,
+    updateNoteLocal,
+    setActiveNoteId,
+  } = useNoteStore();
+
+  const { user } = useAuth();
+
   const activeNote = notes.find((note) => note.id === activeNoteId);
 
   const [title, setTitle] = useState("");
@@ -71,7 +81,13 @@ export function MarkdownEditor() {
     },
     onUpdate: ({ editor }) => {
       if (activeNoteId && isInitialized) {
-        updateNote(activeNoteId, { content: editor.getHTML() });
+        const content = editor.getHTML();
+        updateNoteLocal(activeNoteId, { content });
+        if (user?.id) {
+          updateNoteService(activeNoteId, { content }, user.id).catch((error) =>
+            console.error("Failed to update note content:", error),
+          );
+        }
       }
     },
   });
@@ -90,7 +106,12 @@ export function MarkdownEditor() {
     setTitle(newTitle);
 
     if (activeNoteId && isInitialized) {
-      updateNote(activeNoteId, { title: newTitle });
+      updateNoteLocal(activeNoteId, { title: newTitle });
+      if (user?.id) {
+        updateNoteService(activeNoteId, { title: newTitle }, user.id).catch(
+          (error) => console.error("Failed to update note title:", error),
+        );
+      }
     }
   };
 
