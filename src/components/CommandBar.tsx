@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createElement } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
@@ -10,20 +10,21 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { FileText, FolderPlus, FilePlus } from "lucide-react";
+import { FileText, FolderPlus, FilePlus, LucideIcon } from "lucide-react";
 import useNoteStore from "@/store/noteStore";
+import ThemePreviewCircle from "@/components/ThemePreviewCircle";
 import {
-  settings,
   useSettingsStore,
-  settingsCategories,
 } from "@/store/settingsStore";
-import { SettingCategory, SettingType } from "@/types/settings";
+import { getGroupedSettings, type GroupedSettings } from "@/store/settingsConfig";
+import { SettingType } from "@/types/settings";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext"; // Assuming this exists
 import { Note, Folder } from "@/types/notes";
+import { getThemeById } from "@/lib/themes";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
@@ -64,24 +65,7 @@ export function CommandBar() {
   };
 
   // Group settings by category
-  const groupedSettings = settings.reduce(
-    (acc, setting) => {
-      if (!acc[setting.category]) {
-        acc[setting.category] = {
-          category: settingsCategories.find(
-            (cat) => cat.id === setting.category,
-          ),
-          settings: [],
-        };
-      }
-      acc[setting.category].settings.push(setting);
-      return acc;
-    },
-    {} as Record<
-      string,
-      { category: SettingCategory; settings: SettingType[] }
-    >,
-  );
+  const groupedSettings: GroupedSettings = getGroupedSettings();
 
   const handleCreateNote = async (folderId: string | null = null) => {
     const now = getCurrentTimestamp();
@@ -204,7 +188,7 @@ export function CommandBar() {
             {Object.entries(groupedSettings).map(([categoryId, category]) => (
               <CommandGroup
                 key={categoryId}
-                heading={category.category?.name || categoryId}
+                heading={category._category?.name || categoryId}
               >
                 {category.settings
                   .filter((s) => s.type === "select")
@@ -253,19 +237,34 @@ export function CommandBar() {
         <CommandList>
           <CommandGroup heading={currentSubmenu?.name}>
             {currentSubmenu?.type === "select" &&
-              currentSubmenu.options.map((option) => (
-                <CommandItem
-                  key={option}
-                  onSelect={() =>
-                    runCommand(() => {
-                      setSetting(currentSubmenu.id, option);
-                      toast(`${currentSubmenu.name} set to ${option}`);
-                    })
-                  }
-                >
-                  <span>{option}</span>
-                </CommandItem>
-              ))}
+              currentSubmenu.options.map((optionRaw) => {
+                const option: { value: string; label?: string; icon?: LucideIcon } =
+                  typeof optionRaw === "string"
+                    ? { value: optionRaw }
+                    : optionRaw as { value: string; label?: string; icon?: LucideIcon };
+
+                return (
+                  <CommandItem
+                    key={option.value}
+                    onSelect={() =>
+                      runCommand(() => {
+                        setSetting(currentSubmenu.id, option.value);
+                        toast(`${currentSubmenu.name} set to ${option.value}`);
+                      })
+                    }
+                  >
+                    {option.icon &&
+                      createElement(option.icon, { className: "mr-2 h-4 w-4" })}
+                    {currentSubmenu?.id === "colorTheme" && (
+                      <ThemePreviewCircle
+                        theme={getThemeById(option.value)}
+                        className="h-4 w-4"
+                      />
+                    )}
+                    <span>{option.label ?? option.value}</span>
+                  </CommandItem>
+                );
+              })}
           </CommandGroup>
         </CommandList>
       </CommandDialog>

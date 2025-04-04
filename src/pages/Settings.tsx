@@ -5,10 +5,9 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
-  settings,
   useSettingsStore,
-  settingsCategories,
 } from "@/store/settingsStore";
+import { getGroupedSettings, type GroupedSettings } from "@/store/settingsConfig";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -20,34 +19,7 @@ import { createElement } from "react";
 export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
 
-  // Group settings by category and subcategory
-  const groupedSettings = settings.reduce(
-    (acc, setting) => {
-      if (!acc[setting.category]) {
-        acc[setting.category] = {
-          _category: settingsCategories.find(
-            (cat) => cat.id === setting.category,
-          ),
-          _subcategories: {},
-        };
-      }
-
-      if (setting.subcategory) {
-        if (!acc[setting.category]._subcategories[setting.subcategory]) {
-          acc[setting.category]._subcategories[setting.subcategory] = [];
-        }
-        acc[setting.category]._subcategories[setting.subcategory].push(setting);
-      } else {
-        if (!acc[setting.category].settings) {
-          acc[setting.category].settings = [];
-        }
-        acc[setting.category].settings.push(setting);
-      }
-
-      return acc;
-    },
-    {} as Record<string, any>,
-  );
+  const groupedSettings: GroupedSettings = getGroupedSettings();
 
   return (
     <div className="h-screen flex flex-col p-4 md:p-8 max-w-6xl mx-auto animate-fade-in">
@@ -197,37 +169,32 @@ function renderSetting(
             onValueChange={(value) => value && setSetting(setting.id, value)}
             className="justify-start"
           >
-            {setting.options.map((option) => {
-              let icon: React.ReactNode;
-              if (setting.id === "theme") {
-                if (option === "light") {
-                  icon = <Sun className="h-5 w-5 mr-2" />;
-                } else if (option === "dark") {
-                  icon = <Moon className="h-5 w-5 mr-2" />;
-                } else {
-                  icon = <Monitor className="h-5 w-5 mr-2" />;
-                }
+            {setting.options.map((optionRaw) => {
+              const option = typeof optionRaw === "string" ? { value: optionRaw } : optionRaw;
+
+              let icon: React.ReactNode | null = null;
+              let displayName: string = option.value;
+
+              if (option.icon) {
+                icon = createElement(option.icon, { className: "h-5 w-5 mr-2" });
               } else if (setting.id === "colorTheme") {
                 // Use a colored circle to represent the theme
-                const themeObj = getThemeById(option);
-                icon = <ThemePreviewCircle theme={getThemeById(option)} />;
+                icon = <ThemePreviewCircle theme={getThemeById(option.value)} />;
               }
 
-              let displayName = option;
-
-              // For colorTheme setting, show the theme name instead of ID
               if (setting.id === "colorTheme") {
-                const themeObj = getThemeById(option);
+                const themeObj = getThemeById(option.value);
                 displayName = themeObj.name;
+              } else if (option.label) {
+                displayName = option.label;
               } else {
-                // Capitalize first letter for other options
-                displayName = option.charAt(0).toUpperCase() + option.slice(1);
+                displayName = option.value.charAt(0).toUpperCase() + option.value.slice(1);
               }
 
               return (
                 <ToggleGroupItem
-                  key={option}
-                  value={option}
+                  key={option.value}
+                  value={option.value}
                   aria-label={`${displayName} option`}
                   className="flex items-center"
                 >

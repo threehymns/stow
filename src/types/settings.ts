@@ -18,7 +18,7 @@ type BaseSettingType = {
 export type SettingType =
   | (BaseSettingType & {
       type: "select";
-      options: string[];
+      options: Array<string | { value: string; label?: string; icon?: LucideIcon }>;
       initialValue: string;
       icon?: LucideIcon;
     })
