@@ -1,7 +1,7 @@
 
 import React from "react";
 import useNoteStore from "@/store/noteStore";
-import { FolderPlus, Plus, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { FolderPlus, Plus, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -19,11 +19,7 @@ const HeaderActions = () => {
     folders,
     createNoteLocal,
     createFolderLocal,
-    setActiveNoteId,
     isLoading,
-    realtimeEnabled,
-    enableRealtime,
-    disableRealtime,
   } = useNoteStore();
 
   const { user } = useAuth();
@@ -128,22 +124,6 @@ const HeaderActions = () => {
     }
   };
 
-  const toggleRealtime = async () => {
-    if (realtimeEnabled) {
-      disableRealtime();
-      toast.info("Real-time sync disabled");
-    } else {
-      if (await testRealtimeConnection()) {
-        if (user?.id) {
-          enableRealtime(user.id);
-          toast.success("Real-time sync enabled");
-        }
-      } else {
-        toast.error("Failed to establish real-time connection");
-      }
-    }
-  };
-
   return (
     <div
       className={cn(
@@ -181,20 +161,6 @@ const HeaderActions = () => {
                   variants={item}
                 >
                   <RefreshCw className={cn(isLoading && "animate-spin")} />
-                </MotionButton>
-                <MotionButton
-                  onClick={toggleRealtime}
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  title={realtimeEnabled ? "Disable Real-time Sync" : "Enable Real-time Sync"}
-                  variants={item}
-                >
-                  {realtimeEnabled ? (
-                    <Wifi className="text-green-500" />
-                  ) : (
-                    <WifiOff />
-                  )}
                 </MotionButton>
               </>
             )}
