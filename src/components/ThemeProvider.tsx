@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
+import { getThemeById } from "@/lib/themes";
 
 type Theme = "dark" | "light" | "system";
 
@@ -14,7 +15,7 @@ type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   systemTheme: Theme;
-  getSetting: <T extends string | boolean | number>(key: string) => T;
+  getSetting: (key: string) => string | boolean | number;
 };
 
 const initialState: ThemeProviderState = {
@@ -32,7 +33,9 @@ export function ThemeProvider({
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const { getSetting } = useSettingsStore();
+  const themeMode = useSettingsStore(state => state.getSetting<Theme>("theme"));
+  const colorTheme = useSettingsStore(state => state.getSetting<string>("colorTheme"));
+  const getSetting = useSettingsStore(state => state.getSetting);
   const [theme, setTheme] = useState<Theme>(
     () => (getSetting<Theme>("theme")) || defaultTheme
   );
@@ -52,17 +55,31 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement;
-    const storedTheme = getSetting<Theme>("theme");
-    const resolvedTheme = storedTheme || defaultTheme;
+    const resolvedTheme = themeMode || defaultTheme;
 
-    setTheme(resolvedTheme);
+    if (theme !== resolvedTheme) {
+      setTheme(resolvedTheme);
+    }
 
     const isDark =
       resolvedTheme === "dark" ||
       (resolvedTheme === "system" && systemTheme === "dark");
 
     root.classList.toggle("dark", isDark);
-  }, [systemTheme, defaultTheme, getSetting]);
+
+    if (colorTheme) {
+      root.setAttribute("data-color-theme", colorTheme);
+    } else {
+      root.removeAttribute("data-color-theme");
+    }
+    // Update CSS variables for the selected color theme
+    const themeObj = getThemeById(colorTheme);
+    const palette = isDark ? themeObj.dark : themeObj.light;
+
+    Object.entries(palette).forEach(([key, value]) => {
+      root.style.setProperty(`--${key}`, value);
+    });
+  }, [systemTheme, defaultTheme, themeMode, colorTheme]);
 
   const value = {
     theme,
