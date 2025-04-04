@@ -20,17 +20,19 @@ import { toast } from "sonner";
 
 export function NoteLayout() {
   const { user, loading } = useAuth();
-  const { 
-    notes, 
-    folders, 
-    resetStore, 
-    isSynced, 
-    activeNoteId, 
-    enableRealtime, 
+  const {
+    notes,
+    folders,
+    resetStore,
+    isSynced,
+    activeNoteId,
+    enableRealtime: _enableRealtime,
     disableRealtime,
     realtimeEnabled,
     lastSyncTimestamp
   } = useNoteStore();
+
+  const enableRealtime = _enableRealtime as (userId: string) => void;
 
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -46,22 +48,37 @@ export function NoteLayout() {
           // Sync with Supabase when user is authenticated
           const { notes: syncedNotes, folders: syncedFolders } = await syncNotesAndFolders(
             user.id,
-            notes,
-            folders,
+            [],
+            [],
           );
           
           if (isActive) {
-            useNoteStore.setState({
-              notes: syncedNotes,
-              folders: syncedFolders,
-              activeNoteId: syncedNotes.length > 0 ? syncedNotes[0].id : null,
-              isSynced: true,
-              lastSyncTimestamp: new Date().toISOString()
-            });
+            const { lastRealtimeUpdate } = useNoteStore.getState();
+
+            // Find latest updatedAt timestamp from synced notes and folders
+            const latestSyncedTimestamp = [
+              ...syncedNotes.map(n => n.updatedAt || n.createdAt),
+              ...syncedFolders.map(f => f.createdAt)
+            ].reduce((latest, ts) => {
+              return new Date(ts).getTime() > new Date(latest).getTime() ? ts : latest;
+            }, "1970-01-01T00:00:00.000Z");
+
+            // Only update store if REST data is newer than last realtime update
+            if (!lastRealtimeUpdate || new Date(latestSyncedTimestamp).getTime() > new Date(lastRealtimeUpdate).getTime()) {
+              useNoteStore.setState({
+                notes: syncedNotes,
+                folders: syncedFolders,
+                activeNoteId: syncedNotes.length > 0 ? syncedNotes[0].id : null,
+                isSynced: true,
+                lastSyncTimestamp: new Date().toISOString()
+              });
+            } else {
+              console.log("Skipped updating store from REST sync because real-time data is newer");
+            }
             
             // Enable real-time sync after initial data sync
-            if (!realtimeEnabled) {
-              enableRealtime();
+            if (!realtimeEnabled && user?.id) {
+              enableRealtime(user.id);
               toast.success("Real-time sync enabled");
             }
           }
@@ -90,20 +107,20 @@ export function NoteLayout() {
     // Ensure real-time sync remains enabled if user is authenticated
     if (user && !loading && isSynced && !realtimeEnabled) {
       console.log("Re-enabling real-time sync");
-      enableRealtime();
+      if (user?.id) enableRealtime(user.id);
     }
     
     // Cleanup real-time subscription when component unmounts
     return () => {
       isActive = false;
     };
-  }, [user, loading, resetStore, isSynced, enableRealtime, disableRealtime, realtimeEnabled, notes, folders, isSyncing]);
+  }, [user, loading, resetStore, isSynced, enableRealtime, disableRealtime, realtimeEnabled, isSyncing]);
 
   // Re-establish realtime connection if it was disabled
   useEffect(() => {
     if (user && isSynced && !realtimeEnabled) {
       console.log("Real-time sync was disabled, re-enabling...");
-      enableRealtime();
+      if (user?.id) enableRealtime(user.id);
     }
   }, [user, isSynced, realtimeEnabled, enableRealtime]);
 

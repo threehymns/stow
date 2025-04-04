@@ -134,8 +134,10 @@ const HeaderActions = () => {
       toast.info("Real-time sync disabled");
     } else {
       if (await testRealtimeConnection()) {
-        enableRealtime();
-        toast.success("Real-time sync enabled");
+        if (user?.id) {
+          enableRealtime(user.id);
+          toast.success("Real-time sync enabled");
+        }
       } else {
         toast.error("Failed to establish real-time connection");
       }

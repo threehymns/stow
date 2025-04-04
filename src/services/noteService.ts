@@ -10,6 +10,24 @@ export function getCurrentTimestamp(): string {
 }
 
 /**
+ * Retry helper with exponential backoff
+ */
+export async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delay = 500
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    console.warn(`Retrying after error: ${error}. Retries left: ${retries}`);
+    await new Promise(res => setTimeout(res, delay));
+    return retryWithBackoff(fn, retries - 1, delay * 2);
+  }
+}
+
+/**
  * Create a note in Supabase
  */
 export async function createNote(note: Note, userId: string): Promise<void> {
@@ -145,68 +163,140 @@ export async function deleteFolder(folderId: string, userId: string): Promise<vo
  * Sync notes and folders with Supabase
  */
 export async function syncNotesAndFolders(userId: string, notes: Note[], folders: Folder[]): Promise<{ notes: Note[]; folders: Folder[] }> {
-  // Fetch notes
-  const { data: supabaseNotes = [], error: notesError } = await supabase
-    .from("notes")
-    .select("*")
-    .eq("user_id", userId);
-    
-  if (notesError) {
-    console.error("Error fetching notes:", notesError);
-    throw notesError;
-  }
+  console.log(`[Sync] Starting sync for user ${userId}...`);
+  const startTime = Date.now();
 
-  // Fetch folders
-  const { data: supabaseFolders = [], error: foldersError } = await supabase
-    .from("folders")
-    .select("*")
-    .eq("user_id", userId);
-    
-  if (foldersError) {
-    console.error("Error fetching folders:", foldersError);
-    throw foldersError;
-  }
+  try {
+    // Fetch remote notes with retry
+    const { data: supabaseNotes = [], error: notesError } = await retryWithBackoff(async () =>
+      await supabase
+        .from("notes")
+        .select("*")
+        .eq("user_id", userId)
+    );
 
-  // If no data in Supabase, upload local data
-  if (supabaseNotes.length === 0 && supabaseFolders.length === 0) {
-    console.log("No data in Supabase, uploading local data");
-    
-    try {
-      // First create folders to establish parent-child relationships
-      for (const folder of folders) {
-        await createFolder(folder, userId);
-      }
-      
-      // Then create notes with folder references
-      for (const note of notes) {
-        await createNote(note, userId);
-      }
-      
-      return { notes, folders };
-    } catch (error) {
-      console.error("Error uploading local data:", error);
-      throw error;
+    if (notesError) {
+      console.error("[Sync] Error fetching notes:", notesError);
+      throw notesError;
     }
+
+    // Fetch remote folders with retry
+    const { data: supabaseFolders = [], error: foldersError } = await retryWithBackoff(async () =>
+      await supabase
+        .from("folders")
+        .select("*")
+        .eq("user_id", userId)
+    );
+
+    if (foldersError) {
+      console.error("[Sync] Error fetching folders:", foldersError);
+      throw foldersError;
+    }
+
+    // Convert remote data
+    const remoteNotes: Note[] = supabaseNotes.map((note: any) => ({
+      id: note.id,
+      title: note.title,
+      content: note.content || "",
+      folderId: note.folder_id,
+      createdAt: note.created_at,
+      updatedAt: note.updated_at,
+    }));
+
+    const remoteFolders: Folder[] = supabaseFolders.map((folder: any) => ({
+      id: folder.id,
+      name: folder.name,
+      parentId: folder.parent_id,
+      createdAt: folder.created_at,
+    }));
+
+    // Merge folders (simple union, no conflict resolution yet)
+    const mergedFolders: Folder[] = [...folders];
+    for (const remoteFolder of remoteFolders) {
+      if (!folders.some(f => f.id === remoteFolder.id)) {
+        mergedFolders.push(remoteFolder);
+      }
+    }
+
+    // Upload missing local folders to Supabase
+    const missingFolders = folders.filter(folder => !remoteFolders.some(f => f.id === folder.id));
+    if (missingFolders.length > 0) {
+      await retryWithBackoff(async () => {
+        const { error } = await supabase.from("folders").insert(
+          missingFolders.map(folder => ({
+            id: folder.id,
+            name: folder.name,
+            parent_id: folder.parentId,
+            user_id: userId,
+            created_at: folder.createdAt,
+          }))
+        );
+        if (error) {
+          console.error("Error batch uploading folders:", error);
+          throw error;
+        }
+      });
+    }
+
+    // Merge notes with timestamp-based conflict resolution
+    const mergedNotes: Note[] = [];
+
+    const missingNotes: Note[] = [];
+    for (const localNote of notes) {
+      const remoteNote = remoteNotes.find(n => n.id === localNote.id);
+      if (!remoteNote) {
+        missingNotes.push(localNote);
+      } else {
+        // Both exist, compare updatedAt
+        if (new Date(localNote.updatedAt).getTime() > new Date(remoteNote.updatedAt).getTime()) {
+          // Local is newer, update remote
+          await retryWithBackoff(() => updateNote(localNote.id, {
+            title: localNote.title,
+            content: localNote.content,
+            folderId: localNote.folderId,
+          }, userId));
+          mergedNotes.push(localNote);
+        } else {
+          // Remote is newer or same, keep remote
+          mergedNotes.push(remoteNote);
+        }
+      }
+    }
+  
+    if (missingNotes.length > 0) {
+      await retryWithBackoff(async () => {
+        const { error } = await supabase.from("notes").insert(
+          missingNotes.map(note => ({
+            id: note.id,
+            title: note.title,
+            content: note.content,
+            folder_id: note.folderId,
+            user_id: userId,
+            created_at: note.createdAt,
+            updated_at: note.updatedAt,
+          }))
+        );
+        if (error) {
+          console.error("Error batch uploading notes:", error);
+          throw error;
+        }
+      });
+      mergedNotes.push(...missingNotes);
+    }
+
+    // Add remote-only notes to merged list
+    for (const remoteNote of remoteNotes) {
+      if (!notes.some(n => n.id === remoteNote.id)) {
+        mergedNotes.push(remoteNote);
+      }
+    }
+
+    console.log(`[Sync] Completed successfully in ${Date.now() - startTime} ms`);
+    return { notes: mergedNotes, folders: mergedFolders };
+  } catch (error) {
+    console.error(`[Sync] Failed after ${Date.now() - startTime} ms:`, error);
+    throw error;
   }
-
-  // Otherwise, convert Supabase data to local format
-  const convertedNotes: Note[] = supabaseNotes.map((note: any) => ({
-    id: note.id,
-    title: note.title,
-    content: note.content || "",
-    folderId: note.folder_id,
-    createdAt: note.created_at,
-    updatedAt: note.updated_at,
-  }));
-
-  const convertedFolders: Folder[] = supabaseFolders.map((folder: any) => ({
-    id: folder.id,
-    name: folder.name,
-    parentId: folder.parent_id,
-    createdAt: folder.created_at,
-  }));
-
-  return { notes: convertedNotes, folders: convertedFolders };
 }
 
 /**

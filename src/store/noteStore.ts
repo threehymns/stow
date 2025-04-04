@@ -4,6 +4,16 @@ import { v4 as uuidv4 } from "uuid";
 import { Note, Folder } from "@/types/notes";
 import { getCurrentTimestamp } from "@/services/noteService";
 import { supabase } from "@/integrations/supabase/client";
+/**
+ * Debounce utility
+ */
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
+  let timeout: ReturnType<typeof setTimeout> | null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 interface LoadingStates {
   createNote: boolean;
@@ -38,6 +48,7 @@ interface NoteState {
   errorStates: ErrorStates;
   realtimeEnabled: boolean;
   lastSyncTimestamp: string | null;
+  lastRealtimeUpdate: string | null;
 
   setActiveNoteId: (id: string | null) => void;
   createNoteLocal: (folderId?: string | null) => string;
@@ -51,10 +62,13 @@ interface NoteState {
   toggleFolderExpanded: (folderId: string) => void;
   isNoteInFolder: (noteId: string, folderId: string) => boolean;
 
-  enableRealtime: () => void;
+  enableRealtime: (userId: string) => void;
   disableRealtime: () => void;
   
   resetStore: () => void;
+
+  // Presence channel setup
+  setupPresenceChannel?: (userId: string) => void;
 }
 
 const useNoteStore = create<NoteState>()(
@@ -73,7 +87,7 @@ const useNoteStore = create<NoteState>()(
       // Setup realtime subscription
       let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
-      const setupRealtimeSubscription = () => {
+      const setupRealtimeSubscription = (userId: string) => {
         // Clean up existing subscription if any
         if (realtimeChannel) {
           try {
@@ -83,20 +97,19 @@ const useNoteStore = create<NoteState>()(
           }
         }
 
-        console.log("Setting up realtime subscription...");
-        
-        // Create a new realtime channel
+        console.log("Setting up filtered realtime subscription for user:", userId);
+
         realtimeChannel = supabase.channel('notes-realtime')
-          .on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'notes' 
-          }, (payload) => {
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'notes',
+            filter: `user_id=eq.${userId}`
+          }, debounce((payload) => {
             console.log('Realtime update for notes:', payload);
-            
-            // Handle different event types
+
             const { eventType, new: newRecord, old: oldRecord } = payload;
-            
+
             if (eventType === 'INSERT') {
               const newNote: Note = {
                 id: newRecord.id,
@@ -106,8 +119,7 @@ const useNoteStore = create<NoteState>()(
                 updatedAt: newRecord.updated_at,
                 folderId: newRecord.folder_id,
               };
-              
-              // Don't add notes that already exist
+
               const { notes } = get();
               if (!notes.some(note => note.id === newNote.id)) {
                 set(state => ({
@@ -115,48 +127,47 @@ const useNoteStore = create<NoteState>()(
                   lastSyncTimestamp: getCurrentTimestamp()
                 }));
               }
-            } 
-            else if (eventType === 'UPDATE') {
+            } else if (eventType === 'UPDATE') {
               set(state => ({
-                notes: state.notes.map(note => 
-                  note.id === newRecord.id 
+                notes: state.notes.map(note =>
+                  note.id === newRecord.id
                     ? {
                         ...note,
                         title: newRecord.title,
                         content: newRecord.content || "",
                         updatedAt: newRecord.updated_at,
                         folderId: newRecord.folder_id,
-                      } 
+                      }
                     : note
                 ),
                 lastSyncTimestamp: getCurrentTimestamp()
               }));
-            } 
-            else if (eventType === 'DELETE') {
+            } else if (eventType === 'DELETE') {
               const { activeNoteId } = get();
               const deletedNoteId = oldRecord.id;
-              
+
               set(state => {
                 const filteredNotes = state.notes.filter(note => note.id !== deletedNoteId);
                 return {
                   notes: filteredNotes,
-                  activeNoteId: activeNoteId === deletedNoteId 
-                    ? (filteredNotes.length > 0 ? filteredNotes[0].id : null) 
+                  activeNoteId: activeNoteId === deletedNoteId
+                    ? (filteredNotes.length > 0 ? filteredNotes[0].id : null)
                     : activeNoteId,
                   lastSyncTimestamp: getCurrentTimestamp()
                 };
               });
             }
-          })
-          .on('postgres_changes', { 
-            event: '*', 
-            schema: 'public', 
-            table: 'folders' 
-          }, (payload) => {
+          }, 200))
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'folders',
+            filter: `user_id=eq.${userId}`
+          }, debounce((payload) => {
             console.log('Realtime update for folders:', payload);
-            
+
             const { eventType, new: newRecord, old: oldRecord } = payload;
-            
+
             if (eventType === 'INSERT') {
               const newFolder: Folder = {
                 id: newRecord.id,
@@ -164,8 +175,7 @@ const useNoteStore = create<NoteState>()(
                 createdAt: newRecord.created_at,
                 parentId: newRecord.parent_id,
               };
-              
-              // Don't add folders that already exist
+
               const { folders } = get();
               if (!folders.some(folder => folder.id === newFolder.id)) {
                 set(state => ({
@@ -173,28 +183,26 @@ const useNoteStore = create<NoteState>()(
                   lastSyncTimestamp: getCurrentTimestamp()
                 }));
               }
-            } 
-            else if (eventType === 'UPDATE') {
+            } else if (eventType === 'UPDATE') {
               set(state => ({
-                folders: state.folders.map(folder => 
-                  folder.id === newRecord.id 
+                folders: state.folders.map(folder =>
+                  folder.id === newRecord.id
                     ? {
                         ...folder,
                         name: newRecord.name,
                         parentId: newRecord.parent_id,
-                      } 
+                      }
                     : folder
                 ),
                 lastSyncTimestamp: getCurrentTimestamp()
               }));
-            } 
-            else if (eventType === 'DELETE') {
+            } else if (eventType === 'DELETE') {
               set(state => ({
                 folders: state.folders.filter(folder => folder.id !== oldRecord.id),
                 lastSyncTimestamp: getCurrentTimestamp()
               }));
             }
-          })
+          }, 200))
           .subscribe(status => {
             console.log('Realtime subscription status:', status);
             if (status === 'SUBSCRIBED') {
@@ -217,6 +225,7 @@ const useNoteStore = create<NoteState>()(
         isSynced: false,
         realtimeEnabled: false,
         lastSyncTimestamp: null,
+        lastRealtimeUpdate: null,
         loadingStates: {
           createNote: false,
           updateNote: false,
@@ -229,8 +238,8 @@ const useNoteStore = create<NoteState>()(
         },
         errorStates: {},
 
-        enableRealtime: () => {
-          const channel = setupRealtimeSubscription();
+        enableRealtime: (userId: string) => {
+          const channel = setupRealtimeSubscription(userId);
           if (channel) {
             set({ realtimeEnabled: true });
             console.log("Real-time sync enabled in store");
@@ -409,23 +418,14 @@ const useNoteStore = create<NoteState>()(
         },
 
         resetStore: () => {
-          const now = getCurrentTimestamp();
-          const defaultNote: Note = {
-            id: uuidv4(),
-            title: "Untitled Note",
-            content: "",
-            createdAt: now,
-            updatedAt: now,
-            folderId: null,
-          };
-
           set({
-            notes: [defaultNote],
+            notes: [],
             folders: [],
-            activeNoteId: defaultNote.id,
+            activeNoteId: null,
             expandedFolders: { root: true },
             isSynced: false,
             lastSyncTimestamp: null,
+            lastRealtimeUpdate: null,
             loadingStates: {
               createNote: false,
               updateNote: false,
@@ -438,6 +438,48 @@ const useNoteStore = create<NoteState>()(
             },
             errorStates: {},
           });
+        },
+
+        setupPresenceChannel: (userId: string) => {
+          try {
+            const channelName = `presence:${userId}`;
+            const presenceChannel = supabase.channel(channelName, {
+              config: {
+                presence: {
+                  key: userId,
+                },
+              },
+            });
+
+            presenceChannel
+              .on('presence', { event: 'sync' }, () => {
+                const state = presenceChannel.presenceState();
+                console.log('Presence sync:', state);
+                // Optionally update Zustand store with presence state here
+              })
+              .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                console.log('User joined:', key, newPresences);
+                // Optionally update Zustand store here
+              })
+              .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+                console.log('User left:', key, leftPresences);
+                // Optionally update Zustand store here
+              })
+              .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                  console.log('Presence channel subscribed');
+                  const presenceTrackStatus = await presenceChannel.track({
+                    user: userId,
+                    online_at: new Date().toISOString(),
+                  });
+                  console.log('Presence track status:', presenceTrackStatus);
+                } else if (status === 'CHANNEL_ERROR') {
+                  console.error('Presence channel error');
+                }
+              });
+          } catch (error) {
+            console.error('Error setting up presence channel:', error);
+          }
         },
       };
     },
