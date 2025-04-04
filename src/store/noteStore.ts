@@ -1,8 +1,10 @@
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { Note, Folder } from "@/types/notes";
 import { getCurrentTimestamp } from "@/services/noteService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LoadingStates {
   createNote: boolean;
@@ -35,6 +37,7 @@ interface NoteState {
   isSynced: boolean;
   loadingStates: LoadingStates;
   errorStates: ErrorStates;
+  realtimeEnabled: boolean;
 
   setActiveNoteId: (id: string | null) => void;
   createNoteLocal: (folderId?: string | null) => string;
@@ -48,6 +51,9 @@ interface NoteState {
   toggleFolderExpanded: (folderId: string) => void;
   isNoteInFolder: (noteId: string, folderId: string) => boolean;
 
+  enableRealtime: () => void;
+  disableRealtime: () => void;
+  
   resetStore: () => void;
 }
 
@@ -64,6 +70,117 @@ const useNoteStore = create<NoteState>()(
         folderId: null,
       };
 
+      // Setup realtime subscription
+      let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
+      const setupRealtimeSubscription = () => {
+        // Clean up existing subscription if any
+        if (realtimeChannel) {
+          supabase.removeChannel(realtimeChannel);
+        }
+
+        // Create a new realtime channel
+        realtimeChannel = supabase.channel('notes-realtime')
+          .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'notes' 
+          }, (payload) => {
+            console.log('Realtime update for notes:', payload);
+            
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            // Handle different event types
+            if (eventType === 'INSERT') {
+              const newNote: Note = {
+                id: newRecord.id,
+                title: newRecord.title,
+                content: newRecord.content || "",
+                createdAt: newRecord.created_at,
+                updatedAt: newRecord.updated_at,
+                folderId: newRecord.folder_id,
+              };
+              
+              // Don't add notes that already exist
+              const { notes } = get();
+              if (!notes.some(note => note.id === newNote.id)) {
+                set(state => ({
+                  notes: [newNote, ...state.notes]
+                }));
+              }
+            } 
+            else if (eventType === 'UPDATE') {
+              set(state => ({
+                notes: state.notes.map(note => 
+                  note.id === newRecord.id 
+                    ? {
+                        ...note,
+                        title: newRecord.title,
+                        content: newRecord.content || "",
+                        updatedAt: newRecord.updated_at,
+                        folderId: newRecord.folder_id,
+                      } 
+                    : note
+                )
+              }));
+            } 
+            else if (eventType === 'DELETE') {
+              set(state => ({
+                notes: state.notes.filter(note => note.id !== oldRecord.id)
+              }));
+            }
+          })
+          .on('postgres_changes', { 
+            event: '*', 
+            schema: 'public', 
+            table: 'folders' 
+          }, (payload) => {
+            console.log('Realtime update for folders:', payload);
+            
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+              const newFolder: Folder = {
+                id: newRecord.id,
+                name: newRecord.name,
+                createdAt: newRecord.created_at,
+                parentId: newRecord.parent_id,
+              };
+              
+              // Don't add folders that already exist
+              const { folders } = get();
+              if (!folders.some(folder => folder.id === newFolder.id)) {
+                set(state => ({
+                  folders: [...state.folders, newFolder]
+                }));
+              }
+            } 
+            else if (eventType === 'UPDATE') {
+              set(state => ({
+                folders: state.folders.map(folder => 
+                  folder.id === newRecord.id 
+                    ? {
+                        ...folder,
+                        name: newRecord.name,
+                        parentId: newRecord.parent_id,
+                      } 
+                    : folder
+                )
+              }));
+            } 
+            else if (eventType === 'DELETE') {
+              set(state => ({
+                folders: state.folders.filter(folder => folder.id !== oldRecord.id)
+              }));
+            }
+          })
+          .subscribe(status => {
+            console.log('Realtime subscription status:', status);
+          });
+
+        return realtimeChannel;
+      };
+
       return {
         notes: [defaultNote],
         folders: [],
@@ -71,6 +188,7 @@ const useNoteStore = create<NoteState>()(
         expandedFolders: { root: true },
         isLoading: false,
         isSynced: false,
+        realtimeEnabled: false,
         loadingStates: {
           createNote: false,
           updateNote: false,
@@ -82,6 +200,19 @@ const useNoteStore = create<NoteState>()(
           sync: false,
         },
         errorStates: {},
+
+        enableRealtime: () => {
+          setupRealtimeSubscription();
+          set({ realtimeEnabled: true });
+        },
+
+        disableRealtime: () => {
+          if (realtimeChannel) {
+            supabase.removeChannel(realtimeChannel);
+            realtimeChannel = null;
+          }
+          set({ realtimeEnabled: false });
+        },
 
         setActiveNoteId: (id) => {
           set({ activeNoteId: id });

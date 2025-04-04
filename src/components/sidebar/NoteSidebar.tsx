@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -97,6 +98,15 @@ export function NoteSidebar() {
   const rootFolders = folders.filter((folder) => folder.parentId === null);
   const rootNotes = notes.filter((note) => note.folderId === null);
 
+  // Cast expandedFolders to a Record<string, boolean> to ensure type safety
+  const typedExpandedFolders: Record<string, boolean> = Object.entries(expandedFolders).reduce(
+    (acc, [key, value]) => {
+      acc[key] = Boolean(value);
+      return acc;
+    },
+    {} as Record<string, boolean>
+  );
+
   return (
     <Sidebar>
       <SidebarHeader className="flex-row items-center pt-2 justify-end px-2 py-1.5">
@@ -158,7 +168,7 @@ export function NoteSidebar() {
                   notes={notes}
                   folders={folders}
                   activeNoteId={activeNoteId}
-                  expandedFolders={expandedFolders}
+                  expandedFolders={typedExpandedFolders}
                   editingItemId={editingItemId}
                   editingName={editingName}
                   toggleFolderExpanded={toggleFolderExpanded}

@@ -1,6 +1,7 @@
+
 import React from "react";
 import useNoteStore from "@/store/noteStore";
-import { FolderPlus, Plus, RefreshCw } from "lucide-react";
+import { FolderPlus, Plus, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -9,7 +10,7 @@ import { SidebarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
-import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService, syncNotesAndFolders } from "@/services/noteService";
+import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService, syncNotesAndFolders, testRealtimeConnection } from "@/services/noteService";
 import { Note, Folder } from "@/types/notes";
 
 const HeaderActions = () => {
@@ -20,6 +21,9 @@ const HeaderActions = () => {
     createFolderLocal,
     setActiveNoteId,
     isLoading,
+    realtimeEnabled,
+    enableRealtime,
+    disableRealtime,
   } = useNoteStore();
 
   const { user } = useAuth();
@@ -124,6 +128,20 @@ const HeaderActions = () => {
     }
   };
 
+  const toggleRealtime = async () => {
+    if (realtimeEnabled) {
+      disableRealtime();
+      toast.info("Real-time sync disabled");
+    } else {
+      if (await testRealtimeConnection()) {
+        enableRealtime();
+        toast.success("Real-time sync enabled");
+      } else {
+        toast.error("Failed to establish real-time connection");
+      }
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -150,17 +168,33 @@ const HeaderActions = () => {
             variants={list}
           >
             {user && (
-              <MotionButton
-                onClick={handleSync}
-                variant="ghost"
-                size="icon"
-                className="size-7"
-                title="Sync Notes"
-                disabled={isLoading}
-                variants={item}
-              >
-                <RefreshCw className={cn(isLoading && "animate-spin")} />
-              </MotionButton>
+              <>
+                <MotionButton
+                  onClick={handleSync}
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  title="Sync Notes"
+                  disabled={isLoading}
+                  variants={item}
+                >
+                  <RefreshCw className={cn(isLoading && "animate-spin")} />
+                </MotionButton>
+                <MotionButton
+                  onClick={toggleRealtime}
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  title={realtimeEnabled ? "Disable Real-time Sync" : "Enable Real-time Sync"}
+                  variants={item}
+                >
+                  {realtimeEnabled ? (
+                    <Wifi className="text-green-500" />
+                  ) : (
+                    <WifiOff />
+                  )}
+                </MotionButton>
+              </>
             )}
             <MotionButton
               onClick={handleCreateFolder}
