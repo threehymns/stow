@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, createDocument } from "@tiptap/react";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
@@ -17,6 +17,7 @@ import Code from "@tiptap/extension-code";
 import Blockquote from "@tiptap/extension-blockquote";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import History from "@tiptap/extension-history";
 import { EditorToolbar } from "./EditorToolbar";
 import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
@@ -52,6 +53,7 @@ export function MarkdownEditor() {
       Document,
       Paragraph,
       Text,
+      History,
       Bold,
       Italic,
       Underline,
@@ -79,6 +81,7 @@ export function MarkdownEditor() {
         spellcheck: "false",
       },
     },
+    content: activeNote?.content || "",
     onUpdate: ({ editor }) => {
       if (activeNoteId && isInitialized) {
         const content = editor.getHTML();
@@ -91,15 +94,6 @@ export function MarkdownEditor() {
       }
     },
   });
-
-  // Update editor content when active note changes
-  useEffect(() => {
-    if (editor && activeNote && isInitialized) {
-      if (editor.getHTML() !== activeNote.content) {
-        editor.commands.setContent(activeNote.content);
-      }
-    }
-  }, [editor, activeNote, isInitialized]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;

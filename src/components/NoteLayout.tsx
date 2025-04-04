@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";``
 import HeaderActions from "./HeaderActions";
 import { syncNotesAndFolders } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +18,7 @@ import { AuthStatus } from "./auth/AuthStatus";
 
 export function NoteLayout() {
   const { user, loading } = useAuth();
-  const { notes, folders, resetStore, isSynced } = useNoteStore();
+  const { notes, folders, resetStore, isSynced, activeNoteId } = useNoteStore();
 
   // Sync notes with Supabase when user signs in
   useEffect(() => {
@@ -68,7 +68,7 @@ export function NoteLayout() {
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
           </Tooltip>
-          <MarkdownEditor />
+          <MarkdownEditor key={activeNoteId} />
         </div>
       </SidebarProvider>
     </div>

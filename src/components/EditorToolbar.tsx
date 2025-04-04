@@ -12,6 +12,8 @@ import {
   Quote,
   Code,
   Link,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { Separator } from "@/components/ui/separator";
@@ -66,6 +68,28 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
         className,
       )}
     >
+      <div className="flex items-center">
+        <Button
+          size="sm"
+          variant="ghost"
+          type="button"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          type="button"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Separator orientation="vertical" className="h-8" />
       <div className="flex items-center">
         <Toggle
           size="sm"
