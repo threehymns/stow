@@ -10,7 +10,7 @@ import { SidebarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
-import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService, syncNotesAndFolders, testRealtimeConnection } from "@/services/noteService";
+import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService, syncNotesAndFolders } from "@/services/noteService";
 import { Note, Folder } from "@/types/notes";
 
 const HeaderActions = () => {
@@ -32,10 +32,22 @@ const HeaderActions = () => {
       visible: {
         opacity: 1,
         width: "auto",
+        transition: {
+          when: "beforeChildren",
+          staggerChildren: 0.05,
+          duration: 0.3,
+          ease: "easeOut",
+        },
       },
       hidden: {
         opacity: 0,
         width: 0,
+        transition: {
+          when: "afterChildren",
+          staggerChildren: 0.05,
+          duration: 0.2,
+          ease: "easeIn",
+        },
       },
     }),
     [],
@@ -46,10 +58,18 @@ const HeaderActions = () => {
       visible: {
         opacity: 1,
         x: 0,
+        transition: {
+          duration: 0.1,
+          ease: "easeOut",
+        },
       },
       hidden: {
         opacity: 0,
-        x: -50,
+        x: -20,
+        transition: {
+          duration: 0.2,
+          ease: "easeIn",
+        },
       },
     }),
     [],
@@ -145,7 +165,7 @@ const HeaderActions = () => {
           <motion.div
             className="flex space-x-1 -z-10"
             initial="hidden"
-            whileInView="visible"
+            animate={sidebar.open ? "hidden" : "visible"}
             exit="hidden"
             variants={list}
           >
