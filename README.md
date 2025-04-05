@@ -1,7 +1,7 @@
 <div align="center">
-<img src="./public/logo.svg" alt="Stow logo" width="200">
+<img src="./public/logo.svg" alt="Slate logo" width="200">
 
-# Stow
+# Slate
 
 <span>Web based note-taking for power users.</span>
 
@@ -31,8 +31,8 @@
 1. Clone the repository
 
 ```bash
-git clone https://github.com/threehymns/stow.git
-cd stow
+git clone https://github.com/threehymns/slate.git
+cd slate
 ```
 
 2. Install dependencies
@@ -66,7 +66,7 @@ The built files will be in the `dist` directory.
 ## 🧩 Project Structure
 
 ```
-stow/
+slate/
 ├── public/              # Static assets
 ├── src/
 │   ├── components/      # React components
@@ -82,7 +82,7 @@ stow/
 
 ## 🎨 Theming
 
-Stow comes with several built-in themes that can be selected from the Settings page. Themes include both light and dark variants that automatically switch based on your system preferences or manual selection.
+Slate comes with several built-in themes that can be selected from the Settings page. Themes include both light and dark variants that automatically switch based on your system preferences or manual selection.
 
 ## 🛠️ Technologies Used
 
