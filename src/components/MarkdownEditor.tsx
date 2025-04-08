@@ -16,6 +16,7 @@ import ListItem from "@tiptap/extension-list-item";
 import CodeBlock from "@tiptap/extension-code-block";
 import Code from "@tiptap/extension-code";
 import Blockquote from "@tiptap/extension-blockquote";
+import Typography from "@tiptap/extension-typography";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import History from "@tiptap/extension-history";
@@ -94,6 +95,7 @@ export function MarkdownEditor() {
       Link.configure({
         openOnClick: false,
       }),
+      Typography,
       Placeholder.configure({
         placeholder: "Begin writing your thoughts...",
       }),
