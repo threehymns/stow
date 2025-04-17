@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -13,7 +12,6 @@ import {
 import { FolderItem } from "./FolderItem";
 import { NoteItem } from "./NoteItem";
 import { AuthStatus } from "../auth/AuthStatus";
-import { updateNote as updateNoteService } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function NoteSidebar() {
@@ -27,20 +25,42 @@ export function NoteSidebar() {
     expandedFolders,
     isLoading,
     setActiveNoteId,
-    createNoteLocal,
-    deleteNoteLocal,
-    createFolderLocal,
-    updateFolderLocal,
-    deleteFolderLocal,
+    createNote,
+    deleteNote,
+    createFolder,
+    updateFolder,
+    deleteFolder,
     toggleFolderExpanded,
-    moveNoteLocal,
-    updateNoteLocal,
+    moveNote,
+    updateNote,
   } = useNoteStore();
 
   const { user } = useAuth();
 
-  const handleCreateFolder = (parentId: string | null) => {
-    const newFolderId = createFolderLocal("New Folder", parentId);
+  // Wrapper for folder updates (optimistic + remote)
+  const handleUpdateFolder = (id, data) => {
+    if (!user?.id) {
+      console.error("User ID missing, cannot update folder remotely");
+      return;
+    }
+    updateFolder(id, data, user.id);
+  };
+
+  // Handler for deleting a folder (remote + local)
+  const handleDeleteFolder = (id: string) => {
+    if (!user?.id) {
+      console.error("User ID missing, cannot delete folder remotely");
+      return;
+    }
+    deleteFolder(id, user.id);
+  };
+
+  const handleCreateFolder = async (parentId: string | null) => {
+    if (!user?.id) {
+      console.error("User ID missing, cannot create folder remotely");
+      return;
+    }
+    const newFolderId = await createFolder("New Folder", user.id);
     setEditingItemId(newFolderId);
     const untitledCount = folders.filter(
       (n) => n.parentId === parentId && n.name.startsWith("New Folder"),
@@ -48,8 +68,12 @@ export function NoteSidebar() {
     setEditingName(`New Folder ${untitledCount + 1}`);
   };
 
-  const handleCreateNote = (parentId: string | null) => {
-    const newNoteId = createNoteLocal(parentId);
+  const handleCreateNote = async (parentId: string | null) => {
+    if (!user?.id) {
+      console.error("User ID missing, cannot create remotely");
+      return;
+    }
+    const newNoteId = await createNote(parentId, user.id);
     setEditingItemId(newNoteId);
     const untitledCount = notes.filter(
       (n) => n.folderId === parentId && n.title.startsWith("Untitled Note"),
@@ -82,13 +106,14 @@ export function NoteSidebar() {
 
     const folder = folders.find((f) => f.id === editingItemId);
     if (folder) {
-      updateFolderLocal(editingItemId, { name: editingName });
+      handleUpdateFolder(editingItemId, { name: editingName });
     } else {
-      updateNoteLocal(editingItemId, { title: editingName });
       if (user?.id) {
-        updateNoteService(editingItemId, { title: editingName }, user.id).catch(
+        updateNote(editingItemId, { title: editingName }, user.id).catch(
           (error) => console.error("Failed to update note title:", error),
         );
+      } else {
+        console.error("User ID missing, cannot update remotely");
       }
     }
     setEditingItemId(null);
@@ -177,11 +202,23 @@ export function NoteSidebar() {
                   setEditingItemId={setEditingItemId}
                   setEditingName={setEditingName}
                   handleRenameSubmit={handleRenameSubmit}
-                  updateFolder={updateFolderLocal}
-                  deleteFolder={deleteFolderLocal}
+                  updateFolder={handleUpdateFolder}
+                  deleteFolder={handleDeleteFolder}
                   setActiveNoteId={setActiveNoteId}
-                  moveNote={moveNoteLocal}
-                  deleteNote={deleteNoteLocal}
+                  moveNote={async (noteId, folderId) => {
+                    if (user?.id) {
+                      await moveNote(noteId, folderId, user.id);
+                    } else {
+                      console.error("User ID missing, cannot move remotely");
+                    }
+                  }}
+                  deleteNote={async (noteId) => {
+                    if (user?.id) {
+                      await deleteNote(noteId, user.id);
+                    } else {
+                      console.error("User ID missing, cannot delete remotely");
+                    }
+                  }}
                   wouldCreateCycle={wouldCreateCycle}
                 />
               ))}
@@ -198,8 +235,20 @@ export function NoteSidebar() {
                   setEditingItemId={setEditingItemId}
                   setEditingName={setEditingName}
                   handleRenameSubmit={handleRenameSubmit}
-                  moveNote={moveNoteLocal}
-                  deleteNote={deleteNoteLocal}
+                  moveNote={async (noteId, folderId) => {
+                    if (user?.id) {
+                      await moveNote(noteId, folderId, user.id);
+                    } else {
+                      console.error("User ID missing, cannot move remotely");
+                    }
+                  }}
+                  deleteNote={async (noteId) => {
+                    if (user?.id) {
+                      await deleteNote(noteId, user.id);
+                    } else {
+                      console.error("User ID missing, cannot delete remotely");
+                    }
+                  }}
                 />
               ))}
             </div>

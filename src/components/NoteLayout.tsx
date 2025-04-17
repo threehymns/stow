@@ -1,4 +1,3 @@
-
 import { NoteSidebar } from "./NoteSidebar";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { Settings as SettingsIcon } from "lucide-react";
@@ -11,9 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import HeaderActions from "./HeaderActions";
-import { syncNotesAndFolders } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useNoteStore from "@/store/noteStore";
 import { AuthStatus } from "./auth/AuthStatus";
 import { toast } from "sonner";
@@ -29,7 +27,8 @@ export function NoteLayout() {
     enableRealtime: _enableRealtime,
     disableRealtime,
     realtimeEnabled,
-    lastSyncTimestamp
+    lastSyncTimestamp,
+    syncAll,
   } = useNoteStore();
 
   const enableRealtime = _enableRealtime as (userId: string) => void;
@@ -45,59 +44,16 @@ export function NoteLayout() {
         console.log("Syncing with Supabase for user:", user.id);
         try {
           setIsSyncing(true);
-          // Sync with Supabase when user is authenticated
-          const { notes: syncedNotes, folders: syncedFolders } = await syncNotesAndFolders(
-            user.id,
-            [],
-            [],
-          );
-          
-          if (isActive) {
-            const { lastRealtimeUpdate } = useNoteStore.getState();
-
-            // Find latest updatedAt timestamp from synced notes and folders
-            const latestSyncedTimestamp = [
-              ...syncedNotes.map(n => n.updatedAt || n.createdAt),
-              ...syncedFolders.map(f => f.createdAt)
-            ].reduce((latest, ts) => {
-              return new Date(ts).getTime() > new Date(latest).getTime() ? ts : latest;
-            }, "1970-01-01T00:00:00.000Z");
-
-            // Only update store if REST data is newer than last realtime update
-            if (!lastRealtimeUpdate || new Date(latestSyncedTimestamp).getTime() > new Date(lastRealtimeUpdate).getTime()) {
-              useNoteStore.setState({
-                notes: syncedNotes,
-                folders: syncedFolders,
-                activeNoteId: syncedNotes.length > 0 ? syncedNotes[0].id : null,
-                isSynced: true,
-                lastSyncTimestamp: new Date().toISOString()
-              });
-            } else {
-              console.log("Skipped updating store from REST sync because real-time data is newer");
-            }
-            
-            // Enable real-time sync after initial data sync
-            if (!realtimeEnabled && user?.id) {
-              enableRealtime(user.id);
-              toast.success("Real-time sync enabled");
-            }
+          await syncAll(user.id);
+          if (isActive && !realtimeEnabled && user.id) {
+            enableRealtime(user.id);
+            toast.success("Real-time sync enabled");
           }
         } catch (error) {
           console.error("Error syncing with Supabase:", error);
           toast.error("Failed to sync with Supabase");
         } finally {
-          if (isActive) {
-            setIsSyncing(false);
-          }
-        }
-      } else if (!user && !loading) {
-        console.log("User not authenticated, resetting store");
-        // Reset store when user signs out
-        resetStore();
-        
-        // Disable real-time sync when user signs out
-        if (realtimeEnabled) {
-          disableRealtime();
+          if (isActive) setIsSyncing(false);
         }
       }
     };
@@ -114,7 +70,7 @@ export function NoteLayout() {
     return () => {
       isActive = false;
     };
-  }, [user, loading, resetStore, isSynced, enableRealtime, disableRealtime, realtimeEnabled, isSyncing]);
+  }, [user, loading, isSynced, enableRealtime, realtimeEnabled, isSyncing]);
 
   // Re-establish realtime connection if it was disabled
   useEffect(() => {
@@ -123,6 +79,17 @@ export function NoteLayout() {
       if (user?.id) enableRealtime(user.id);
     }
   }, [user, isSynced, realtimeEnabled, enableRealtime]);
+
+  // Reset store and disable realtime only on sign-out (not initial load)
+  const prevUserRef = useRef(user);
+  useEffect(() => {
+    if (prevUserRef.current && !user) {
+      console.log("User signed out, resetting store");
+      resetStore();
+      if (realtimeEnabled) disableRealtime();
+    }
+    prevUserRef.current = user;
+  }, [user, resetStore, disableRealtime, realtimeEnabled]);
 
   return (
     <div className="flex h-screen overflow-hidden">

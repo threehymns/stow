@@ -29,14 +29,15 @@ import { getThemeById } from "@/lib/themes";
 export function CommandBar() {
   const [open, setOpen] = useState(false);
   const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(null);
+  const [isCommandRunning, setIsCommandRunning] = useState(false);
   const navigate = useNavigate();
 
   const {
     notes,
     folders,
     setActiveNoteId,
-    createNoteLocal,
-    createFolderLocal,
+    createNote,
+    createFolder,
   } = useNoteStore();
 
   const { getSetting, setSetting } = useSettingsStore();
@@ -54,9 +55,19 @@ export function CommandBar() {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  const runCommand = (command: () => void) => {
-    command();
+  // Reset isCommandRunning when dialog is reopened
+  useEffect(() => {
+    if (open) {
+      setIsCommandRunning(false);
+    }
+  }, [open]);
+
+  const runCommand = async (command: () => void | Promise<void>) => {
+    if (isCommandRunning) return;
+    setIsCommandRunning(true);
+    await command();
     setOpen(false);
+    setIsCommandRunning(false);
   };
 
   const handleCommandSelection = (commandName: SettingType) => {
@@ -80,33 +91,28 @@ export function CommandBar() {
 
     try {
       if (user?.id) {
-        await createNoteService(newNote, user.id);
+        await createNote(folderId, user.id);
+        toast.success("New note created");
+      } else {
+        console.error("User ID missing, cannot create remotely");
       }
-      createNoteLocal(folderId);
-      toast.success("New note created");
-    } catch (error: any) {
-      console.error("Failed to create note:", error);
+    } catch (error: unknown) {
+      console.error("Failed to create note:", error instanceof Error ? error.message : error);
       toast.error("Failed to create note");
     }
   };
 
   const handleCreateFolder = async () => {
-    const now = getCurrentTimestamp();
-    const newFolder: Folder = {
-      id: uuidv4(),
-      name: `New Folder ${folders.length}`,
-      createdAt: now,
-      parentId: null,
-    };
-
     try {
       if (user?.id) {
-        await createFolderService(newFolder, user.id);
+        await createFolder(`New Folder ${folders.length}`, user.id);
+        toast.success("New folder created");
+      } else {
+        console.error("User ID missing, cannot create folder remotely");
+        toast.error("Failed to create folder");
       }
-      createFolderLocal(newFolder.name);
-      toast.success("New folder created");
-    } catch (error: any) {
-      console.error("Failed to create folder:", error);
+    } catch (error: unknown) {
+      console.error("Failed to create folder:", error instanceof Error ? error.message : error);
       toast.error("Failed to create folder");
     }
   };

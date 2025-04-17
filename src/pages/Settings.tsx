@@ -8,6 +8,7 @@ import {
   useSettingsStore,
 } from "@/store/settingsStore";
 import { getGroupedSettings, type GroupedSettings } from "@/store/settingsConfig";
+import type { SettingType } from "@/types/settings";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -112,7 +113,7 @@ export default function Settings() {
                         <TabsContent key={subcategory} value={subcategory}>
                           <Card>
                             <CardContent className="pt-6 space-y-6">
-                              {(subcategorySettings as any[]).map((setting) => (
+                              {(subcategorySettings as SettingType[]).map((setting) => (
                                 <div key={setting.id} className="space-y-4">
                                   {renderSetting(
                                     setting,
@@ -138,9 +139,9 @@ export default function Settings() {
 }
 
 function renderSetting(
-  setting: any,
-  getSetting: (id: string) => any,
-  setSetting: (id: string, value: any) => void,
+  setting: SettingType,
+  getSetting: (id: string) => string | boolean | number,
+  setSetting: (id: string, value: string | boolean | number) => void,
 ) {
   return (
     <>
@@ -166,12 +167,14 @@ function renderSetting(
           <ToggleGroup
             type="single"
             value={getSetting(setting.id).toString()}
-            onValueChange={(value) => value && setSetting(setting.id, value)}
+            onValueChange={(value: string) => {
+              if (value !== undefined) {
+                setSetting(setting.id, value);
+              }
+            }}
             className="justify-start"
           >
-            {setting.options.map((optionRaw) => {
-              const option = typeof optionRaw === "string" ? { value: optionRaw } : optionRaw;
-
+            {(setting.options as { value: string; icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>; label?: string }[]).map((option) => {
               let icon: React.ReactNode | null = null;
               let displayName: string = option.value;
 
@@ -227,7 +230,9 @@ function renderSetting(
           <Switch
             id={`toggle-${setting.id}`}
             checked={getSetting(setting.id) as boolean}
-            onCheckedChange={(checked) => setSetting(setting.id, checked)}
+            onCheckedChange={(checked: boolean) => {
+              setSetting(setting.id, checked);
+            }}
           />
         </div>
       )}

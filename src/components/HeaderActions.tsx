@@ -17,8 +17,8 @@ const HeaderActions = () => {
   const {
     notes,
     folders,
-    createNoteLocal,
-    createFolderLocal,
+    createNote,
+    createFolder,
     isLoading,
   } = useNoteStore();
 
@@ -88,10 +88,10 @@ const HeaderActions = () => {
       if (user?.id) {
         await createFolderService(newFolder, user.id);
       }
-      createFolderLocal(newFolder.name);
+      createFolder(newFolder.name, user.id);
       toast.success("New folder created");
-    } catch (error: any) {
-      console.error("Failed to create folder:", error);
+    } catch (error: unknown) {
+      console.error("Failed to create folder:", error instanceof Error ? error.message : error);
       toast.error("Failed to create folder");
     }
   };
@@ -111,10 +111,14 @@ const HeaderActions = () => {
       if (user?.id) {
         await createNoteService(newNote, user.id);
       }
-      createNoteLocal();
-      toast.success("New note created");
-    } catch (error: any) {
-      console.error("Failed to create note:", error);
+      if (user?.id) {
+        await createNote(null, user.id);
+        toast.success("New note created");
+      } else {
+        console.error("User ID missing, cannot create remotely");
+      }
+    } catch (error: unknown) {
+      console.error("Failed to create note:", error instanceof Error ? error.message : error);
       toast.error("Failed to create note");
     }
   };
@@ -136,8 +140,8 @@ const HeaderActions = () => {
         isSynced: true,
       });
       toast.success("Notes synchronized");
-    } catch (error: any) {
-      console.error("Failed to sync notes:", error);
+    } catch (error: unknown) {
+      console.error("Failed to sync notes:", error instanceof Error ? error.message : error);
       toast.error("Failed to sync notes");
     } finally {
       useNoteStore.setState({ isLoading: false });

@@ -12,7 +12,7 @@ type ThemeProviderProps = {
 };
 
 type ThemeProviderState = {
-  theme: Theme;
+  theme: string;
   setTheme: (theme: Theme) => void;
   systemTheme: Theme;
   getSetting: (key: string) => string | boolean | number;
@@ -22,7 +22,7 @@ const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
   systemTheme: "light",
-  getSetting: () => "" as any,
+  getSetting: () => "" as string,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);

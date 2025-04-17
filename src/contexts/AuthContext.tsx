@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { syncNotesAndFolders } from "@/services/noteService";
 import useNoteStore from "@/store/noteStore";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,15 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             useNoteStore.getState().enableRealtime(session.user.id);
             console.log("Realtime sync enabled after sign in");
 
-            // Fetch fresh notes/folders from Supabase
-            syncNotesAndFolders(session.user.id, [], []).then(({ notes, folders }) => {
-              useNoteStore.setState({
-                notes,
-                folders,
-                activeNoteId: notes.length > 0 ? notes[0].id : null,
-                isSynced: true,
-              });
-            });
+            useNoteStore.getState().syncAll(session.user.id);
           }
         } catch (error) {
           console.error("Failed to enable realtime sync after sign in:", error);

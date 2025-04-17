@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useEditor, EditorContent, createDocument } from "@tiptap/react";
@@ -31,7 +30,7 @@ export function MarkdownEditor() {
   const {
     notes,
     activeNoteId,
-    updateNoteLocal,
+    updateNote,
     setActiveNoteId,
     realtimeEnabled
   } = useNoteStore();
@@ -52,7 +51,7 @@ export function MarkdownEditor() {
     } else {
       setActiveNoteId(null);
     }
-  }, [activeNote, activeNoteId, setActiveNoteId]);
+  }, [activeNoteId]);
 
   // Create a debounced save function to avoid too many requests
   const debouncedSaveNote = useRef(
@@ -111,7 +110,7 @@ export function MarkdownEditor() {
     onUpdate: ({ editor }) => {
       if (activeNoteId && isInitialized) {
         const content = editor.getHTML();
-        updateNoteLocal(activeNoteId, { content });
+        updateNote(activeNoteId, { content }, user.id);
         
         if (user?.id) {
           debouncedSaveNote(activeNoteId, { content }, user.id);
@@ -120,9 +119,16 @@ export function MarkdownEditor() {
     },
   });
 
+  // Sync title when activeNote.title changes remotely
+  useEffect(() => {
+    if (isInitialized && activeNote && !isLocalUpdate.current) {
+      setTitle(activeNote.title);
+    }
+  }, [activeNote?.title, realtimeEnabled]);
+
   // Update editor content when activeNote changes or is updated by another client
   useEffect(() => {
-    if (editor && activeNote && !isLocalUpdate.current) {
+    if (editor && activeNote && !isLocalUpdate.current && !editor.isFocused) {
       const currentContent = editor.getHTML();
       
       // Only update if the content actually changed and it's not from a local edit
@@ -131,14 +137,14 @@ export function MarkdownEditor() {
         editor.commands.setContent(activeNote.content || "");
       }
     }
-  }, [editor, activeNote, realtimeEnabled]);
+  }, [editor, activeNote?.content, realtimeEnabled]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
 
     if (activeNoteId && isInitialized) {
-      updateNoteLocal(activeNoteId, { title: newTitle });
+      updateNote(activeNoteId, { title: newTitle }, user.id);
       
       if (user?.id) {
         debouncedSaveNote(activeNoteId, { title: newTitle }, user.id);

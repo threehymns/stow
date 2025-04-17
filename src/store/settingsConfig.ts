@@ -40,7 +40,7 @@ export const settings: SettingType[] = [
     type: "select",
     initialValue: "default",
     icon: Palette,
-    options: themes.map((theme) => theme.id),
+    options: themes.map((theme) => ({ value: theme.id, label: theme.name })),
     category: "appearance",
     description: "Choose your preferred color palette",
   },

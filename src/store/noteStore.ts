@@ -4,10 +4,21 @@ import { v4 as uuidv4 } from "uuid";
 import { Note, Folder } from "@/types/notes";
 import { getCurrentTimestamp } from "@/services/noteService";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  syncNotesAndFolders,
+  createNote as createNoteService,
+  updateNote as updateNoteService,
+  deleteNote as deleteNoteService,
+  moveNote as moveNoteService,
+  updateFolder as updateFolderService,
+  createFolder as createFolderService,
+  deleteFolder as deleteFolderService,
+} from "@/services/noteService";
+
 /**
  * Debounce utility
  */
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
+function debounce<T extends (...args: unknown[]) => void>(func: T, wait: number) {
   let timeout: ReturnType<typeof setTimeout> | null;
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout);
@@ -44,31 +55,31 @@ interface NoteState {
   expandedFolders: Record<string, boolean>;
   isLoading: boolean;
   isSynced: boolean;
-  loadingStates: LoadingStates;
-  errorStates: ErrorStates;
   realtimeEnabled: boolean;
   lastSyncTimestamp: string | null;
   lastRealtimeUpdate: string | null;
+  loadingStates: LoadingStates;
+  errorStates: ErrorStates;
+  hasHydrated: boolean;
+  setHasHydrated: () => void;
 
   setActiveNoteId: (id: string | null) => void;
-  createNoteLocal: (folderId?: string | null) => string;
-  updateNoteLocal: (id: string, data: Partial<Note>) => void;
-  deleteNoteLocal: (id: string) => void;
-  moveNoteLocal: (noteId: string, folderId: string | null) => void;
-
-  createFolderLocal: (name: string, parentId?: string | null) => string;
-  updateFolderLocal: (id: string, data: Partial<Folder>) => void;
-  deleteFolderLocal: (id: string) => void;
+  createFolder: (name: string, userId: string) => Promise<string>;
+  deleteFolder: (id: string, userId: string) => Promise<void>;
   toggleFolderExpanded: (folderId: string) => void;
   isNoteInFolder: (noteId: string, folderId: string) => boolean;
 
+  deleteNote: (id: string, userId: string) => Promise<void>;
+  createNote: (folderId: string | null, userId: string) => Promise<string>;
+  updateNote: (noteId: string, data: Partial<Note>, userId: string) => Promise<void>;
+  moveNote: (noteId: string, folderId: string | null, userId: string) => Promise<void>;
+  syncAll: (userId: string) => Promise<void>;
   enableRealtime: (userId: string) => void;
   disableRealtime: () => void;
-  
   resetStore: () => void;
-
-  // Presence channel setup
   setupPresenceChannel?: (userId: string) => void;
+  updateFolder: (id: string, data: Partial<Folder>, userId: string) => Promise<void>;
+  updateNoteLocal: (noteId: string, data: Partial<Note>) => void;
 }
 
 const useNoteStore = create<NoteState>()(
@@ -92,7 +103,7 @@ const useNoteStore = create<NoteState>()(
         if (realtimeChannel) {
           try {
             supabase.removeChannel(realtimeChannel);
-          } catch (error) {
+          } catch (error: unknown) {
             console.error("Error removing channel:", error);
           }
         }
@@ -105,19 +116,23 @@ const useNoteStore = create<NoteState>()(
             schema: 'public',
             table: 'notes',
             filter: `user_id=eq.${userId}`
-          }, debounce((payload) => {
+          }, debounce((payload: unknown) => {
             console.log('Realtime update for notes:', payload);
 
-            const { eventType, new: newRecord, old: oldRecord } = payload;
+            const { eventType, new: newRecord, old: oldRecord } = payload as {
+              eventType: string;
+              new: Record<string, unknown>;
+              old: Record<string, unknown>;
+            };
 
             if (eventType === 'INSERT') {
               const newNote: Note = {
-                id: newRecord.id,
-                title: newRecord.title,
-                content: newRecord.content || "",
-                createdAt: newRecord.created_at,
-                updatedAt: newRecord.updated_at,
-                folderId: newRecord.folder_id,
+                id: newRecord.id as string,
+                title: newRecord.title as string,
+                content: newRecord.content as string || "",
+                createdAt: newRecord.created_at as string,
+                updatedAt: newRecord.updated_at as string,
+                folderId: newRecord.folder_id as string | null,
               };
 
               const { notes } = get();
@@ -133,10 +148,10 @@ const useNoteStore = create<NoteState>()(
                   note.id === newRecord.id
                     ? {
                         ...note,
-                        title: newRecord.title,
-                        content: newRecord.content || "",
-                        updatedAt: newRecord.updated_at,
-                        folderId: newRecord.folder_id,
+                        title: newRecord.title as string,
+                        content: newRecord.content as string || "",
+                        updatedAt: newRecord.updated_at as string,
+                        folderId: newRecord.folder_id as string | null,
                       }
                     : note
                 ),
@@ -144,7 +159,7 @@ const useNoteStore = create<NoteState>()(
               }));
             } else if (eventType === 'DELETE') {
               const { activeNoteId } = get();
-              const deletedNoteId = oldRecord.id;
+              const deletedNoteId = oldRecord.id as string;
 
               set(state => {
                 const filteredNotes = state.notes.filter(note => note.id !== deletedNoteId);
@@ -163,17 +178,21 @@ const useNoteStore = create<NoteState>()(
             schema: 'public',
             table: 'folders',
             filter: `user_id=eq.${userId}`
-          }, debounce((payload) => {
+          }, debounce((payload: unknown) => {
             console.log('Realtime update for folders:', payload);
 
-            const { eventType, new: newRecord, old: oldRecord } = payload;
+            const { eventType, new: newRecord, old: oldRecord } = payload as {
+              eventType: string;
+              new: Record<string, unknown>;
+              old: Record<string, unknown>;
+            };
 
             if (eventType === 'INSERT') {
               const newFolder: Folder = {
-                id: newRecord.id,
-                name: newRecord.name,
-                createdAt: newRecord.created_at,
-                parentId: newRecord.parent_id,
+                id: newRecord.id as string,
+                name: newRecord.name as string,
+                createdAt: newRecord.created_at as string,
+                parentId: newRecord.parent_id as string | null,
               };
 
               const { folders } = get();
@@ -189,8 +208,8 @@ const useNoteStore = create<NoteState>()(
                   folder.id === newRecord.id
                     ? {
                         ...folder,
-                        name: newRecord.name,
-                        parentId: newRecord.parent_id,
+                        name: newRecord.name as string,
+                        parentId: newRecord.parent_id as string | null,
                       }
                     : folder
                 ),
@@ -203,7 +222,7 @@ const useNoteStore = create<NoteState>()(
               }));
             }
           }, 200))
-          .subscribe(status => {
+          .subscribe((status: string) => {
             console.log('Realtime subscription status:', status);
             if (status === 'SUBSCRIBED') {
               console.log('Successfully subscribed to realtime changes');
@@ -214,6 +233,145 @@ const useNoteStore = create<NoteState>()(
           });
 
         return realtimeChannel;
+      };
+
+      const createNoteLocal = (folderId?: string | null) => {
+        const now = getCurrentTimestamp();
+        const newNote: Note = {
+          id: uuidv4(),
+          title: "Untitled Note",
+          content: "",
+          createdAt: now,
+          updatedAt: now,
+          folderId,
+        };
+
+        set((state) => ({
+          notes: [newNote, ...state.notes],
+          activeNoteId: newNote.id,
+        }));
+
+        return newNote.id;
+      };
+
+      const updateNoteLocal = (id: string, data: Partial<Note>) => {
+        set((state) => ({
+          notes: state.notes.map((note) =>
+            note.id === id
+              ? {
+                  ...note,
+                  ...data,
+                  updatedAt: getCurrentTimestamp(),
+                }
+              : note,
+          ),
+        }));
+      };
+
+      const deleteNoteLocal = (id: string) => {
+        const { notes, activeNoteId } = get();
+        const filteredNotes = notes.filter((note) => note.id !== id);
+
+        set({
+          notes: filteredNotes,
+          activeNoteId:
+            activeNoteId === id
+              ? filteredNotes.length > 0
+                ? filteredNotes[0].id
+                : null
+              : activeNoteId,
+        });
+      };
+
+      const moveNoteLocal = (noteId: string, folderId: string | null) => {
+        set((state) => ({
+          notes: state.notes.map((note) =>
+            note.id === noteId
+              ? { ...note, folderId, updatedAt: getCurrentTimestamp() }
+              : note,
+          ),
+        }));
+      };
+
+      const createFolderLocal = (name: string, parentId: string | null = null) => {
+        const now = getCurrentTimestamp();
+        const newFolder: Folder = {
+          id: uuidv4(),
+          name,
+          createdAt: now,
+          parentId,
+        };
+
+        set((state) => {
+          const updatedFolders = [...state.folders, newFolder];
+
+          return {
+            folders: updatedFolders,
+            expandedFolders: {
+              ...state.expandedFolders,
+              [parentId || "root"]: true,
+            },
+          };
+        });
+
+        return newFolder.id;
+      };
+
+      const updateFolderLocal = (id: string, data: Partial<Folder>) => {
+        set((state) => ({
+          folders: state.folders.map((folder) =>
+            folder.id === id ? { ...folder, ...data } : folder,
+          ),
+        }));
+      };
+
+      const deleteFolderLocal = (id: string) => {
+        const getAllSubfolderIds = (folderId: string): string[] => {
+          const { folders } = get();
+          const directSubfolders = folders.filter(
+            (f) => f.parentId === folderId,
+          );
+          return [
+            folderId,
+            ...directSubfolders.flatMap((sf) => getAllSubfolderIds(sf.id)),
+          ];
+        };
+
+        const folderIdsToRemove = getAllSubfolderIds(id);
+
+        set((state) => {
+          const notesNotInFolders = state.notes.filter(
+            (note) =>
+              !note.folderId || !folderIdsToRemove.includes(note.folderId),
+          );
+
+          const folderToDelete = state.folders.find((f) => f.id === id);
+          const parentId = folderToDelete?.parentId;
+
+          const notesToMove = state.notes
+            .filter(
+              (note) =>
+                note.folderId && folderIdsToRemove.includes(note.folderId),
+            )
+            .map((note) => ({
+              ...note,
+              folderId: parentId,
+              updatedAt: getCurrentTimestamp(),
+            }));
+
+          const newExpandedFolders = { ...state.expandedFolders };
+          folderIdsToRemove.forEach((fid) => {
+            delete newExpandedFolders[fid];
+          });
+
+          return {
+            notes: [...notesNotInFolders, ...notesToMove],
+            folders: state.folders.filter(
+              (folder) => !folderIdsToRemove.includes(folder.id),
+            ),
+            expandedFolders: newExpandedFolders,
+          };
+        });
       };
 
       return {
@@ -237,6 +395,8 @@ const useNoteStore = create<NoteState>()(
           sync: false,
         },
         errorStates: {},
+        hasHydrated: false,
+        setHasHydrated: () => set({ hasHydrated: true }),
 
         enableRealtime: (userId: string) => {
           const channel = setupRealtimeSubscription(userId);
@@ -252,7 +412,7 @@ const useNoteStore = create<NoteState>()(
               supabase.removeChannel(realtimeChannel);
               realtimeChannel = null;
               console.log("Real-time sync disabled in store");
-            } catch (error) {
+            } catch (error: unknown) {
               console.error("Error removing channel:", error);
             }
           }
@@ -263,143 +423,53 @@ const useNoteStore = create<NoteState>()(
           set({ activeNoteId: id });
         },
 
-        createNoteLocal: (folderId = null) => {
-          const now = getCurrentTimestamp();
-          const newNote: Note = {
-            id: uuidv4(),
-            title: "Untitled Note",
-            content: "",
-            createdAt: now,
-            updatedAt: now,
-            folderId,
-          };
-
+        createFolder: (name, userId) => {
+          const newFolderId = createFolderLocal(name);
           set((state) => ({
-            notes: [newNote, ...state.notes],
-            activeNoteId: newNote.id,
+            loadingStates: { ...state.loadingStates, createFolder: true },
+            errorStates: { ...state.errorStates, createFolder: undefined },
           }));
-
-          return newNote.id;
-        },
-
-        updateNoteLocal: (id, data) => {
-          set((state) => ({
-            notes: state.notes.map((note) =>
-              note.id === id
-                ? {
-                    ...note,
-                    ...data,
-                    updatedAt: getCurrentTimestamp(),
-                  }
-                : note,
-            ),
-          }));
-        },
-
-        deleteNoteLocal: (id) => {
-          const { notes, activeNoteId } = get();
-          const filteredNotes = notes.filter((note) => note.id !== id);
-
-          set({
-            notes: filteredNotes,
-            activeNoteId:
-              activeNoteId === id
-                ? filteredNotes.length > 0
-                  ? filteredNotes[0].id
-                  : null
-                : activeNoteId,
-          });
-        },
-
-        moveNoteLocal: (noteId, folderId) => {
-          set((state) => ({
-            notes: state.notes.map((note) =>
-              note.id === noteId
-                ? { ...note, folderId, updatedAt: getCurrentTimestamp() }
-                : note,
-            ),
-          }));
-        },
-
-        createFolderLocal: (name, parentId = null) => {
-          const now = getCurrentTimestamp();
-          const newFolder: Folder = {
-            id: uuidv4(),
-            name,
-            createdAt: now,
-            parentId,
-          };
-
-          set((state) => {
-            const updatedFolders = [...state.folders, newFolder];
-
-            return {
-              folders: updatedFolders,
-              expandedFolders: {
-                ...state.expandedFolders,
-                [parentId || "root"]: true,
-              },
-            };
-          });
-
-          return newFolder.id;
-        },
-
-        updateFolderLocal: (id, data) => {
-          set((state) => ({
-            folders: state.folders.map((folder) =>
-              folder.id === id ? { ...folder, ...data } : folder,
-            ),
-          }));
-        },
-
-        deleteFolderLocal: (id) => {
-          const getAllSubfolderIds = (folderId: string): string[] => {
-            const { folders } = get();
-            const directSubfolders = folders.filter(
-              (f) => f.parentId === folderId,
-            );
-            return [
-              folderId,
-              ...directSubfolders.flatMap((sf) => getAllSubfolderIds(sf.id)),
-            ];
-          };
-
-          const folderIdsToRemove = getAllSubfolderIds(id);
-
-          set((state) => {
-            const notesNotInFolders = state.notes.filter(
-              (note) =>
-                !note.folderId || !folderIdsToRemove.includes(note.folderId),
-            );
-
-            const folderToDelete = state.folders.find((f) => f.id === id);
-            const parentId = folderToDelete?.parentId;
-
-            const notesToMove = state.notes
-              .filter(
-                (note) =>
-                  note.folderId && folderIdsToRemove.includes(note.folderId),
-              )
-              .map((note) => ({
-                ...note,
-                folderId: parentId,
-                updatedAt: getCurrentTimestamp(),
+          (async () => {
+            try {
+              const folder = get().folders.find((f) => f.id === newFolderId);
+              if (folder) await createFolderService(folder, userId);
+            } catch (error: unknown) {
+              console.error("Error creating folder remotely:", error);
+              set((state) => ({
+                errorStates: {
+                  ...state.errorStates,
+                  createFolder:
+                    (error instanceof Error ? error.message : String(error)) ||
+                    "Failed to create folder remotely",
+                },
               }));
+            } finally {
+              set((state) => ({
+                loadingStates: { ...state.loadingStates, createFolder: false },
+              }));
+            }
+          })();
+          return Promise.resolve(newFolderId);
+        },
 
-            const newExpandedFolders = { ...state.expandedFolders };
-            folderIdsToRemove.forEach((fid) => {
-              delete newExpandedFolders[fid];
-            });
-
-            return {
-              notes: [...notesNotInFolders, ...notesToMove],
-              folders: state.folders.filter(
-                (folder) => !folderIdsToRemove.includes(folder.id),
-              ),
-              expandedFolders: newExpandedFolders,
-            };
-          });
+        deleteFolder: async (id: string, userId: string) => {
+          deleteFolderLocal(id);
+          set((state) => ({
+            loadingStates: { ...state.loadingStates, deleteFolder: true },
+            errorStates: { ...state.errorStates, deleteFolder: undefined },
+          }));
+          try {
+            await deleteFolderService(id, userId);
+          } catch (error: unknown) {
+            console.error("Error deleting folder remotely:", error);
+            set((state) => ({
+              errorStates: { ...state.errorStates, deleteFolder: (error instanceof Error ? error.message : String(error)) || "Failed to delete folder remotely" },
+            }));
+          } finally {
+            set((state) => ({
+              loadingStates: { ...state.loadingStates, deleteFolder: false },
+            }));
+          }
         },
 
         toggleFolderExpanded: (folderId) => {
@@ -465,7 +535,7 @@ const useNoteStore = create<NoteState>()(
                 console.log('User left:', key, leftPresences);
                 // Optionally update Zustand store here
               })
-              .subscribe(async (status) => {
+              .subscribe(async (status: string) => {
                 if (status === 'SUBSCRIBED') {
                   console.log('Presence channel subscribed');
                   const presenceTrackStatus = await presenceChannel.track({
@@ -477,15 +547,140 @@ const useNoteStore = create<NoteState>()(
                   console.error('Presence channel error');
                 }
               });
-          } catch (error) {
+          } catch (error: unknown) {
             console.error('Error setting up presence channel:', error);
+          }
+        },
+        deleteNote: async (id: string, userId: string) => {
+          deleteNoteLocal(id);
+          set(state => ({ loadingStates: { ...state.loadingStates, deleteNote: true }, errorStates: { ...state.errorStates, deleteNote: undefined } }));
+          try {
+            await deleteNoteService(id, userId);
+          } catch (error: unknown) {
+            console.error("Error deleting note remotely:", error);
+            set(state => ({ errorStates: { ...state.errorStates, deleteNote: (error instanceof Error ? error.message : String(error)) || "Failed to delete note remotely" } }));
+          } finally {
+            set(state => ({ loadingStates: { ...state.loadingStates, deleteNote: false } }));
+          }
+        },
+        // Create note locally and remotely
+        createNote: async (folderId, userId) => {
+          const newNoteId = createNoteLocal(folderId);
+          set((state) => ({ loadingStates: { ...state.loadingStates, createNote: true }, errorStates: { ...state.errorStates, createNote: undefined } }));
+          try {
+            const note = get().notes.find(n => n.id === newNoteId);
+            if (note) await createNoteService(note, userId);
+          } catch (error: unknown) {
+            console.error("Error creating note remotely:", error);
+            set((state) => ({ errorStates: { ...state.errorStates, createNote: (error instanceof Error ? error.message : String(error)) || "Failed to create note remotely" } }));
+          } finally {
+            set((state) => ({ loadingStates: { ...state.loadingStates, createNote: false } }));
+          }
+          return newNoteId;
+        },
+
+        // Update note locally and remotely
+        updateNote: async (noteId, data, userId) => {
+          updateNoteLocal(noteId, data);
+          set((state) => ({ loadingStates: { ...state.loadingStates, updateNote: true }, errorStates: { ...state.errorStates, updateNote: undefined } }));
+          try {
+            await updateNoteService(noteId, data, userId);
+          } catch (error: unknown) {
+            console.error("Error updating note remotely:", error);
+            set((state) => ({ errorStates: { ...state.errorStates, updateNote: (error instanceof Error ? error.message : String(error)) || "Failed to update note remotely" } }));
+          } finally {
+            set((state) => ({ loadingStates: { ...state.loadingStates, updateNote: false } }));
+          }
+        },
+
+        // Move note locally and remotely
+        moveNote: async (noteId, folderId, userId) => {
+          moveNoteLocal(noteId, folderId);
+          set((state) => ({ loadingStates: { ...state.loadingStates, moveNote: true }, errorStates: { ...state.errorStates, moveNote: undefined } }));
+          try {
+            await moveNoteService(noteId, folderId, userId);
+          } catch (error: unknown) {
+            console.error("Error moving note remotely:", error);
+            set((state) => ({ errorStates: { ...state.errorStates, moveNote: (error instanceof Error ? error.message : String(error)) || "Failed to move note remotely" } }));
+          } finally {
+            set((state) => ({ loadingStates: { ...state.loadingStates, moveNote: false } }));
+          }
+        },
+
+        // Update folder locally and remotely
+        updateFolder: async (id: string, data: Partial<Folder>, userId: string) => {
+          updateFolderLocal(id, data);
+          set((state) => ({
+            loadingStates: { ...state.loadingStates, updateFolder: true },
+            errorStates: { ...state.errorStates, updateFolder: undefined },
+          }));
+          try {
+            await updateFolderService(id, data, userId);
+          } catch (error: unknown) {
+            console.error("Error updating folder remotely:", error);
+            set((state) => ({
+              errorStates: {
+                ...state.errorStates,
+                updateFolder:
+                  (error instanceof Error ? error.message : String(error)) ||
+                  "Failed to update folder remotely",
+              },
+            }));
+          } finally {
+            set((state) => ({
+              loadingStates: { ...state.loadingStates, updateFolder: false },
+            }));
+          }
+        },
+
+        updateNoteLocal,
+        syncAll: async (userId: string) => {
+          if (!get().hasHydrated) {
+            console.log("Skipping sync until hydrated");
+            return;
+          }
+          set(state => ({
+            loadingStates: { ...state.loadingStates, sync: true },
+            errorStates: { ...state.errorStates, sync: undefined },
+          }));
+          try {
+            const { notes: newNotes, folders: newFolders } = await syncNotesAndFolders(
+              userId,
+              get().notes,
+              get().folders
+            );
+            set(state => {
+              const currentActive = state.activeNoteId;
+              const newActive =
+                currentActive && newNotes.some(n => n.id === currentActive)
+                  ? currentActive
+                  : newNotes[0]?.id ?? null;
+              return {
+                notes: newNotes,
+                folders: newFolders,
+                activeNoteId: newActive,
+                isSynced: true,
+                lastSyncTimestamp: getCurrentTimestamp(),
+              };
+            });
+          } catch (error: unknown) {
+            console.error("Error syncing notes and folders:", error);
+            set(state => ({
+              errorStates: { ...state.errorStates, sync: (error instanceof Error ? error.message : String(error)) || "Sync failed" },
+            }));
+          } finally {
+            set(state => ({
+              loadingStates: { ...state.loadingStates, sync: false },
+            }));
           }
         },
       };
     },
     {
       name: "note-app-storage",
-      onRehydrateStorage: () => (state) => {},
+      onRehydrateStorage: () => (state) => {
+        if (state) state.setHasHydrated();
+      },
     },
   ),
 );
