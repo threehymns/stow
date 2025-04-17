@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Note, Folder } from "@/types/notes";
+import { SyncManager } from "./SyncManager";
 
 /**
  * Utility to get current ISO timestamp
@@ -158,105 +159,55 @@ export async function deleteFolder(folderId: string, userId: string): Promise<vo
   }
 }
 
+const noteSyncManager = new SyncManager<Note>(supabase, {
+  table: "notes",
+  mapRow: (row: any) => ({
+    id: row.id as string,
+    title: row.title as string,
+    content: row.content || "",
+    folderId: row.folder_id as string | null,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  }),
+  mapLocal: (item: Note, userId: string) => ({
+    id: item.id,
+    title: item.title,
+    content: item.content,
+    folder_id: item.folderId,
+    user_id: userId,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
+  }),
+  updatedAtColumn: "updated_at",
+});
+const folderSyncManager = new SyncManager<Folder>(supabase, {
+  table: "folders",
+  mapRow: (row: any) => ({
+    id: row.id as string,
+    name: row.name as string,
+    parentId: row.parent_id as string | null,
+    createdAt: row.created_at as string,
+  }),
+  mapLocal: (item: Folder, userId: string) => ({
+    id: item.id,
+    name: item.name,
+    parent_id: item.parentId,
+    user_id: userId,
+    created_at: item.createdAt,
+  }),
+});
+
 /**
  * Sync notes and folders with Supabase
  */
-export async function syncNotesAndFolders(userId: string, notes: Note[], folders: Folder[]): Promise<{ notes: Note[]; folders: Folder[] }> {
+export async function syncNotesAndFolders(userId: string, notes: Note[], folders: Folder[], since?: string): Promise<{ notes: Note[]; folders: Folder[] }> {
   console.log(`[Sync] Starting sync for user ${userId}...`);
   const startTime = Date.now();
   try {
-    // Fetch remote notes and folders with retry
-    const notesRes = await retryWithBackoff(async () => {
-      const { data, error } = await supabase.from("notes").select("*").eq("user_id", userId);
-      if (error) throw error;
-      return { data, error };
-    });
-    const foldersRes = await retryWithBackoff(async () => {
-      const { data, error } = await supabase.from("folders").select("*").eq("user_id", userId);
-      if (error) throw error;
-      return { data, error };
-    });
-    const supabaseNotes = notesRes.data || [];
-    const supabaseFolders = foldersRes.data || [];
-
-    // Upsert local notes
-    if (notes.length) {
-      await retryWithBackoff(async () => {
-        const { error } = await supabase.from("notes").upsert(
-          notes.map((n: Note) => ({
-            id: n.id,
-            title: n.title,
-            content: n.content,
-            folder_id: n.folderId,
-            user_id: userId,
-            created_at: n.createdAt,
-            updated_at: n.updatedAt,
-          })),
-          { onConflict: "id" }
-        );
-        if (error) throw error;
-      });
-    }
-    // Upsert local folders
-    if (folders.length) {
-      await retryWithBackoff(async () => {
-        const { error } = await supabase.from("folders").upsert(
-          folders.map((f: Folder) => ({
-            id: f.id,
-            name: f.name,
-            parent_id: f.parentId,
-            user_id: userId,
-            created_at: f.createdAt,
-          })),
-          { onConflict: "id" }
-        );
-        if (error) throw error;
-      });
-    }
-
-    // Fetch final state (includes items upserted above)
-    const { data: rowsNotes, error: rowsError } = await supabase.from("notes").select("*").eq("user_id", userId);
-    if (rowsError) throw rowsError;
-    const { data: rowsFolders, error: rowsFoldersError } = await supabase.from("folders").select("*").eq("user_id", userId);
-    if (rowsFoldersError) throw rowsFoldersError;
-
-    // Merge remote and local items to preserve local-only entries
-    const rawLocalNotes = notes.map((n: Note) => ({
-      id: n.id,
-      title: n.title,
-      content: n.content,
-      folder_id: n.folderId,
-      user_id: userId,
-      created_at: n.createdAt,
-      updated_at: n.updatedAt,
-    })).filter((local: Record<string, unknown>) => !rowsNotes.some((remote: Record<string, unknown>) => remote.id === local.id));
-    const combinedNotes = [...rowsNotes, ...rawLocalNotes];
-
-    const rawLocalFolders = folders.map((f: Folder) => ({
-      id: f.id,
-      name: f.name,
-      parent_id: f.parentId,
-      user_id: userId,
-      created_at: f.createdAt,
-    })).filter((local: Record<string, unknown>) => !rowsFolders.some((remote: Record<string, unknown>) => remote.id === local.id));
-    const combinedFolders = [...rowsFolders, ...rawLocalFolders];
-
-    // Map combined entries to Note and Folder types
-    const mergedNotes: Note[] = combinedNotes.map((row: Record<string, unknown>) => ({
-      id: row.id,
-      title: row.title,
-      content: row.content || "",
-      folderId: row.folder_id,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    })) as Note[];
-    const mergedFolders: Folder[] = combinedFolders.map((row: Record<string, unknown>) => ({
-      id: row.id,
-      name: row.name,
-      parentId: row.parent_id,
-      createdAt: row.created_at,
-    })) as Folder[];
-
+    const [mergedNotes, mergedFolders] = await Promise.all([
+      noteSyncManager.sync(userId, notes, since),
+      folderSyncManager.sync(userId, folders),
+    ]);
     console.log(`[Sync] Completed successfully in ${Date.now() - startTime} ms`);
     return { notes: mergedNotes, folders: mergedFolders };
   } catch (error) {

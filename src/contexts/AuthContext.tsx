@@ -69,6 +69,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Flush offline queue on network reconnect
+  useEffect(() => {
+    if (!user) return;
+    const handleOnline = () => {
+      console.log('Network reconnected, flushing offline queue');
+      useNoteStore.getState().flushQueue(user.id);
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [user]);
+
   const signIn = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
