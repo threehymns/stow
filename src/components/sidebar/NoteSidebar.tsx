@@ -13,6 +13,7 @@ import { FolderItem } from "./FolderItem";
 import { NoteItem } from "./NoteItem";
 import { AuthStatus } from "../auth/AuthStatus";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCommand } from "@/hooks/commandCenter";
 
 export function NoteSidebar() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -80,6 +81,9 @@ export function NoteSidebar() {
     ).length;
     setEditingName(`Untitled Note ${untitledCount + 1}`);
   };
+
+  useCommand("newNote", handleCreateNote);
+  useCommand("newFolder", handleCreateFolder);
 
   // Helper to get all child folder IDs (recursively)
   const getChildFolderIds = (parentId: string | null): string[] => {

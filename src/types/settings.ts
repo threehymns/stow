@@ -26,4 +26,9 @@ export type SettingType =
       type: "toggle";
       initialValue: boolean;
       icon?: LucideIcon;
+    })
+  | (BaseSettingType & {
+      type: "keybindings";
+      initialValue: Record<string, string[]>;
+      actions: Array<{ id: string; name: string }>;
     });

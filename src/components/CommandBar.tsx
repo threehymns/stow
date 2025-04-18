@@ -17,17 +17,18 @@ import {
   useSettingsStore,
 } from "@/store/settingsStore";
 import { getGroupedSettings, type GroupedSettings } from "@/store/settingsConfig";
+import { settings as settingsDefinitions } from "@/store/settingsConfig";
 import { SettingType } from "@/types/settings";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { v4 as uuidv4 } from "uuid";
-import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService } from "@/services/noteService";
-import { useAuth } from "@/contexts/AuthContext"; // Assuming this exists
-import { Note, Folder } from "@/types/notes";
 import { getThemeById } from "@/lib/themes";
+import commandCenter, { useCommand } from "@/hooks/commandCenter";
+import { Keybinding } from "@/components/ui/Keybinding";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
+  // toggle open via commandCenter event
+  useCommand("commandBar", () => setOpen(o => !o));
   const [currentSubmenu, setCurrentSubmenu] = useState<SettingType | null>(null);
   const [isCommandRunning, setIsCommandRunning] = useState(false);
   const navigate = useNavigate();
@@ -36,26 +37,10 @@ export function CommandBar() {
     notes,
     folders,
     setActiveNoteId,
-    createNote,
-    createFolder,
   } = useNoteStore();
 
   const { getSetting, setSetting } = useSettingsStore();
-  const { user } = useAuth();
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
-      }
-    };
-
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
-
-  // Reset isCommandRunning when dialog is reopened
   useEffect(() => {
     if (open) {
       setIsCommandRunning(false);
@@ -77,45 +62,6 @@ export function CommandBar() {
 
   // Group settings by category
   const groupedSettings: GroupedSettings = getGroupedSettings();
-
-  const handleCreateNote = async (folderId: string | null = null) => {
-    const now = getCurrentTimestamp();
-    const newNote: Note = {
-      id: uuidv4(),
-      title: "Untitled Note",
-      content: "",
-      createdAt: now,
-      updatedAt: now,
-      folderId,
-    };
-
-    try {
-      if (user?.id) {
-        await createNote(folderId, user.id);
-        toast.success("New note created");
-      } else {
-        console.error("User ID missing, cannot create remotely");
-      }
-    } catch (error: unknown) {
-      console.error("Failed to create note:", error instanceof Error ? error.message : error);
-      toast.error("Failed to create note");
-    }
-  };
-
-  const handleCreateFolder = async () => {
-    try {
-      if (user?.id) {
-        await createFolder(`New Folder ${folders.length}`, user.id);
-        toast.success("New folder created");
-      } else {
-        console.error("User ID missing, cannot create folder remotely");
-        toast.error("Failed to create folder");
-      }
-    } catch (error: unknown) {
-      console.error("Failed to create folder:", error instanceof Error ? error.message : error);
-      toast.error("Failed to create folder");
-    }
-  };
 
   return (
     <>
@@ -144,14 +90,13 @@ export function CommandBar() {
               </CommandItem>
             ))}
             <CommandItem
-              onSelect={() =>
-                runCommand(() => {
-                  handleCreateNote();
-                })
-              }
+              onSelect={() => runCommand(() => commandCenter.emit('newNote'))}
             >
               <FilePlus className="mr-2 h-4 w-4" />
               <span>Create New Note</span>
+              <CommandShortcut>
+                <Keybinding command="newNote" />
+              </CommandShortcut>
             </CommandItem>
           </CommandGroup>
 
@@ -167,7 +112,7 @@ export function CommandBar() {
                     key={folder.id}
                     onSelect={() =>
                       runCommand(() => {
-                        handleCreateNote(folder.id);
+                        commandCenter.emit('newNote', folder.id);
                       })
                     }
                   >
@@ -177,60 +122,74 @@ export function CommandBar() {
                 );
               })}
             <CommandItem
-              onSelect={() =>
-                runCommand(() => {
-                  handleCreateFolder();
-                })
-              }
+              onSelect={() => runCommand(() => commandCenter.emit('newFolder'))}
             >
               <FolderPlus className="mr-2 h-4 w-4" />
               <span>Create New Folder</span>
+              <CommandShortcut>
+                <Keybinding command="newFolder" />
+              </CommandShortcut>
             </CommandItem>
           </CommandGroup>
 
           <CommandSeparator />
 
-          <CommandGroup heading="Settings">
-            {Object.entries(groupedSettings).map(([categoryId, category]) => (
-              <CommandGroup
-                key={categoryId}
-                heading={category._category?.name || categoryId}
+          {/* Shortcut actions from settings */}
+          <CommandGroup heading="Shortcuts">
+            {settingsDefinitions.find((s): s is Extract<SettingType, { type: 'keybindings' }> =>
+              s.id === 'keybindings' && s.type === 'keybindings'
+            )?.actions.map((action) => (
+              <CommandItem
+                key={action.id}
+                onSelect={() => runCommand(() => commandCenter.emit(action.id))}
               >
-                {category.settings
-                  .filter((s) => s.type === "select")
-                  .map((setting) => (
-                    <CommandItem
-                      key={setting.id}
-                      onSelect={() => handleCommandSelection(setting)}
-                    >
-                      {setting.icon && (
-                        <setting.icon className="mr-2 h-4 w-4" />
-                      )}
-                      <span>{setting.name}</span>
-                    </CommandItem>
-                  ))}
-                {category.settings
-                  .filter((s) => s.type === "toggle")
-                  .map((setting) => (
-                    <CommandItem
-                      key={setting.id}
-                      onSelect={() => {
-                        setSetting(setting.id, !getSetting(setting.id));
-                        setOpen(false);
-                      }}
-                    >
-                      {setting.icon && (
-                        <setting.icon className="mr-2 h-4 w-4" />
-                      )}
-                      <span>Toggle {setting.name}</span>
-                      <CommandShortcut>
-                        {getSetting(setting.id) ? "On" : "Off"}
-                      </CommandShortcut>
-                    </CommandItem>
-                  ))}
-              </CommandGroup>
+                <span>{action.name}</span>
+                <CommandShortcut>
+                  <Keybinding command={action.id} />
+                </CommandShortcut>
+              </CommandItem>
             ))}
           </CommandGroup>
+
+          {Object.entries(groupedSettings).map(([categoryId, category]) => (
+            <CommandGroup
+              key={categoryId}
+              heading={category._category?.name || categoryId}
+            >
+              {category.settings
+                .filter((s) => s.type === "select")
+                .map((setting) => (
+                  <CommandItem
+                    key={setting.id}
+                    onSelect={() => handleCommandSelection(setting)}
+                  >
+                    {setting.icon && (
+                      <setting.icon className="mr-2 h-4 w-4" />
+                    )}
+                    <span>{setting.name}</span>
+                  </CommandItem>
+                ))}
+              {category.settings
+                .filter((s) => s.type === "toggle")
+                .map((setting) => (
+                  <CommandItem
+                    key={setting.id}
+                    onSelect={() => {
+                      setSetting(setting.id, !getSetting(setting.id));
+                      setOpen(false);
+                    }}
+                  >
+                    {setting.icon && (
+                      <setting.icon className="mr-2 h-4 w-4" />
+                    )}
+                    <span>Toggle {setting.name}</span>
+                    <CommandShortcut>
+                      {getSetting(setting.id) ? "On" : "Off"}
+                    </CommandShortcut>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
+          ))}
         </CommandList>
       </CommandDialog>
 

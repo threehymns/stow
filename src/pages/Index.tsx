@@ -8,23 +8,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Keybinding } from "@/components/ui/Keybinding";
+import commandCenter from "@/hooks/commandCenter";
 
 const Index = () => {
   // Change document title
   useEffect(() => {
     document.title = "Slate - Notes App";
   }, []);
-
-  const openCommandBar = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Simulate the Ctrl+K shortcut
-    const event = new KeyboardEvent("keydown", {
-      key: "k",
-      ctrlKey: true,
-      bubbles: true,
-    });
-    document.dispatchEvent(event);
-  };
 
   return (
     <motion.div
@@ -41,13 +32,13 @@ const Index = () => {
             variant="outline"
             size="icon"
             className="fixed bottom-4 right-4 z-50"
-            onClick={openCommandBar}
+            onClick={() => commandCenter.emit("commandBar")}
           >
             <Command className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="left">
-          <p>Command Bar (Ctrl+K)</p>
+        <TooltipContent side="left" className="flex items-center gap-2">
+          Command Bar <Keybinding command="commandBar" />
         </TooltipContent>
       </Tooltip>
     </motion.div>

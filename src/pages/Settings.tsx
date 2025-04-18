@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   useSettingsStore,
@@ -15,7 +15,11 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getThemeById } from "@/lib/themes";
 import ThemePreviewCircle from "@/components/ThemePreviewCircle.tsx";
-import { createElement } from "react";
+import React, { createElement, useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { ReloadIcon } from "@radix-ui/react-icons";
+import { Edit2, Check, X } from "lucide-react";
+import { Keybinding } from "@/components/ui/Keybinding";
 
 export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
@@ -138,6 +142,153 @@ export default function Settings() {
   );
 }
 
+function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSetting, }: { action: { id: string; name: string }; bindings: unknown; defaultBindings: Record<string, string[]>; setSetting: (id: string, value: any) => void; }) {
+  // Each action's value is now a string[]
+  const bindings = (typeof rawBindings === 'object' && rawBindings) ? (rawBindings as Record<string, string[]>) : defaultBindings;
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [combo, setCombo] = useState("");
+  const keybinds: string[] = Array.isArray(bindings[action.id]) ? bindings[action.id] : defaultBindings[action.id] || [];
+
+  useEffect(() => { if (editingIdx === null) setCombo(""); }, [bindings, editingIdx]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const parts: string[] = [];
+    if (e.ctrlKey) parts.push("Ctrl");
+    if (e.shiftKey) parts.push("Shift");
+    if (e.altKey) parts.push("Alt");
+    if (e.metaKey) parts.push("Meta");
+    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    if (!["Control", "Shift", "Alt", "Meta"].includes(e.key)) parts.push(key);
+    setCombo(parts.join("+"));
+  };
+
+  const save = (idx: number | null) => {
+    let newKeybinds = [...keybinds];
+    if (combo && !newKeybinds.includes(combo)) {
+      if (idx === null) {
+        newKeybinds.push(combo);
+      } else {
+        newKeybinds[idx] = combo;
+      }
+      setSetting("keybindings", { ...bindings, [action.id]: newKeybinds });
+    }
+    setEditingIdx(null);
+    setCombo("");
+  };
+
+  const remove = (idx: number) => {
+    const newKeybinds = keybinds.filter((_, i) => i !== idx);
+    setSetting("keybindings", { ...bindings, [action.id]: newKeybinds });
+  };
+
+  const reset = () => {
+    setSetting("keybindings", { ...bindings, [action.id]: defaultBindings[action.id] });
+    setEditingIdx(null);
+    setCombo("");
+  };
+
+  return (
+    <div className="flex items-center gap-4 p-3 border-b border-muted group hover:bg-muted/20 transition-colors">
+      <Label className="text-base font-medium min-w-[120px] mr-2">{action.name}</Label>
+      <div className="flex-1 flex items-center flex-wrap gap-2">
+        {keybinds.map((bind, idx) => (
+          <span key={bind + idx} className="flex items-center gap-1 relative group/keybind">
+            {editingIdx === idx ? (
+              <Input
+                value={combo}
+                placeholder="Press keys"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    if (editingIdx === -1) save(null);
+                    else save(editingIdx);
+                  } else {
+                    handleKeyDown(e);
+                  }
+                }}
+                autoFocus
+                className="w-28 h-7 px-2 text-xs"
+                onChange={() => { }}
+                onBlur={() => {
+                  if (editingIdx === -1) save(null);
+                  else save(editingIdx);
+                }}
+              />
+            ) : (
+              <>
+                <span
+                  className="flex items-center cursor-pointer hover:bg-muted/40 rounded transition-colors p-1"
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Edit keybind ${bind}`}
+                  onClick={() => { setEditingIdx(idx); setCombo(bind); }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setEditingIdx(idx); setCombo(bind);
+                    }
+                  }}
+                >
+                  <Keybinding combo={bind} />
+                  <button
+                    className="ml-1 opacity-0 group-hover/keybind:opacity-100 focus:opacity-100 w-0 group-hover/keybind:w-3 overflow-hidden transition-all"
+                    tabIndex={0}
+                    onClick={() => remove(idx)}
+                    aria-label="Remove keybind"
+                    style={{ background: 'none', border: 'none', padding: 0 }}
+                  >
+                    <X className="w-3 h-3 text-muted-foreground" />
+                  </button>
+                </span>
+              </>
+            )}
+          </span>
+        ))}
+        {/* Add new keybind */}
+        {editingIdx === -1 ? (
+          <Input
+            value={combo}
+            placeholder="Press keys"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (editingIdx === -1) save(null);
+                else save(editingIdx);
+              } else {
+                handleKeyDown(e);
+              }
+            }}
+            autoFocus
+            className="w-28 h-7 px-2 text-xs"
+            onChange={() => { }}
+            onBlur={() => {
+              if (editingIdx === -1) save(null);
+              else save(editingIdx);
+            }}
+          />
+        ) : (
+          <Button
+            variant="ghost"
+            className="p-0 w-7 h-7 aspect-square border border-dashed border-muted text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted hover:text-foreground focus:opacity-100 transition-opacity"
+            onClick={() => { setEditingIdx(-1); setCombo(""); }}
+            tabIndex={0}
+            aria-label="Add keybind"
+          >
+            <Plus className="w-2 h-2" />
+          </Button>
+        )}
+      </div>
+      <button
+        className="ml-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+        onClick={reset}
+        title="Reset"
+        tabIndex={0}
+        style={{ background: 'none', border: 'none', padding: 0 }}
+      >
+        <ReloadIcon className="w-4 h-4 text-muted-foreground" />
+      </button>
+    </div>
+  );
+}
+
 function renderSetting(
   setting: SettingType,
   getSetting: (id: string) => string | boolean | number,
@@ -234,6 +385,20 @@ function renderSetting(
               setSetting(setting.id, checked);
             }}
           />
+        </div>
+      )}
+
+      {setting.type === "keybindings" && (
+        <div className="space-y-1">
+          {setting.actions.map((action) => (
+            <KeybindingField
+              key={action.id}
+              action={action}
+              bindings={getSetting('keybindings')}
+              defaultBindings={setting.initialValue as Record<string, string[]>}
+              setSetting={setSetting}
+            />
+          ))}
         </div>
       )}
     </>

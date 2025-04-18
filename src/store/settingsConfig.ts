@@ -1,4 +1,4 @@
-import { Sun, Moon, Monitor, Calendar, Layout, Eye, Palette } from "lucide-react";
+import { Sun, Moon, Monitor, Calendar, Layout, Eye, Palette, Keyboard } from "lucide-react";
 import type { SettingCategory, SettingType } from "@/types/settings";
 import { themes } from "@/lib/themes";
 
@@ -15,6 +15,12 @@ export const settingsCategories: SettingCategory[] = [
     name: "Display",
     description: "Control what information is displayed",
     icon: Eye,
+  },
+  {
+    id: "shortcuts",
+    name: "Shortcuts",
+    description: "Customize keyboard shortcuts",
+    icon: Keyboard,
   },
 ];
 
@@ -53,7 +59,35 @@ export const settings: SettingType[] = [
     category: "display",
     description: "Show creation dates under note titles in the sidebar",
   },
+  {
+    name: "Keyboard Shortcuts",
+    id: "keybindings",
+    type: "keybindings",
+    initialValue: {
+      newNote: ["Ctrl+Alt+N"],
+      newFolder: ["Ctrl+Alt+F"],
+      sync: ["Ctrl+S"],
+      commandBar: ["Ctrl+Shift+P"],
+      openSettings: ["Ctrl+,"]
+    },
+    actions: [
+      { id: "newNote", name: "New Note" },
+      { id: "newFolder", name: "New Folder" },
+      { id: "sync", name: "Sync Notes" },
+      { id: "commandBar", name: "Command Bar" },
+      { id: "openSettings", name: "Open Settings" },
+    ],
+    category: "shortcuts",
+    description: "Edit keyboard shortcuts for actions",
+  },
 ];
+
+// Infer CommandId union from keybindings action IDs
+export type CommandId =
+  Extract<
+    SettingType,
+    { type: 'keybindings' }
+  >['actions'][number]['id'];
 
 /** Grouped settings type */
 export interface GroupedSettings {
