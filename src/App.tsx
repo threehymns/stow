@@ -12,6 +12,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useGlobalKeybinds } from "@/hooks/useGlobalKeybinds";
 import { useNavigate } from "react-router-dom";
 import { useCommand } from "@/hooks/commandCenter";
+import { KeyPressProvider } from "@/components/ui/KeyPressContext";
 
 export function CommandRouter() {
   const navigate = useNavigate();
@@ -30,27 +31,29 @@ const App = () => {
   // Register all global keybindings to emit events
   useGlobalKeybinds();
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <SettingsSyncer />
-          <TooltipProvider>
-            <Sonner richColors />
-            <BrowserRouter>
-              {/* Global keybinds handled via useGlobalKeybinds() */}
-              <CommandRouter />
-              <CommandBar />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/settings" element={<Settings />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <KeyPressProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <SettingsSyncer />
+            <TooltipProvider>
+              <Sonner richColors />
+              <BrowserRouter>
+                {/* Global keybinds handled via useGlobalKeybinds() */}
+                <CommandRouter />
+                <CommandBar />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/settings" element={<Settings />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </KeyPressProvider>
   );
 };
 
