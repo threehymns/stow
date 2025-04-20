@@ -22,7 +22,6 @@ import History from "@tiptap/extension-history";
 import { EditorToolbar } from "./EditorToolbar";
 import useNoteStore from "@/store/noteStore";
 import { AnimatePresence, motion } from "framer-motion";
-import { updateNote as updateNoteService } from "@/services/noteService";
 import { useAuth } from "@/contexts/AuthContext";
 import { debounce } from "@/lib/utils";
 
@@ -53,21 +52,19 @@ export function MarkdownEditor() {
     }
   }, [activeNoteId]);
 
-  // Create a debounced save function to avoid too many requests
+  // Debounced save via store.updateNote, userId passed in
   const debouncedSaveNote = useRef(
     debounce(async (noteId: string, data: Partial<typeof activeNote>, userId: string) => {
+      setIsSaving(true);
+      isLocalUpdate.current = true;
       try {
-        setIsSaving(true);
-        isLocalUpdate.current = true;
-        await updateNoteService(noteId, data, userId);
-        console.log("Note saved to Supabase:", data);
+        await updateNote(noteId, data, userId);
+        console.log("Note saved via store.updateNote:", data);
       } catch (error) {
-        console.error("Failed to update note:", error);
+        console.error("Failed to save note via store:", error);
       } finally {
         setIsSaving(false);
-        setTimeout(() => {
-          isLocalUpdate.current = false;
-        }, 500); // Release the local update flag after a short delay
+        isLocalUpdate.current = false;
       }
     }, 500)
   ).current;
@@ -108,13 +105,9 @@ export function MarkdownEditor() {
     },
     content: activeNote?.content || "",
     onUpdate: ({ editor }) => {
-      if (activeNoteId && isInitialized) {
+      if (activeNoteId && isInitialized && user?.id) {
         const content = editor.getHTML();
-        updateNote(activeNoteId, { content }, user.id);
-        
-        if (user?.id) {
-          debouncedSaveNote(activeNoteId, { content }, user.id);
-        }
+        debouncedSaveNote(activeNoteId, { content }, user.id);
       }
     },
   });
@@ -144,11 +137,7 @@ export function MarkdownEditor() {
     setTitle(newTitle);
 
     if (activeNoteId && isInitialized) {
-      updateNote(activeNoteId, { title: newTitle }, user.id);
-      
-      if (user?.id) {
-        debouncedSaveNote(activeNoteId, { title: newTitle }, user.id);
-      }
+      if (user?.id) debouncedSaveNote(activeNoteId, { title: newTitle }, user.id);
     }
   };
 

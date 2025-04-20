@@ -373,6 +373,16 @@ const useNoteStore = create<NoteState>()(
                   }));
                 }
               } else if (eventType === 'UPDATE') {
+                // Skip if local already matches remote update to avoid duplicate sync
+                const existing = get().notes.find(n => n.id === newRecord.id);
+                if (existing
+                  && existing.title === newRecord.title
+                  && existing.content === (newRecord.content as string || "")
+                  && existing.updatedAt === newRecord.updated_at
+                  && existing.folderId === (newRecord.folder_id as string | null)
+                ) {
+                  return;
+                }
                 set(state => ({
                   notes: state.notes.map(note =>
                     note.id === newRecord.id
