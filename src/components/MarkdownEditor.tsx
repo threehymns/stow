@@ -186,7 +186,7 @@ export function MarkdownEditor() {
             />
           </div>
 
-          <div className="flex-1 px-6 pt-20 w-full max-w-prose mx-auto">
+          <div className="flex-1 px-6 pt-20 w-full max-w-prose mx-auto font-editor">
             <Input
               value={title}
               onChange={handleTitleChange}

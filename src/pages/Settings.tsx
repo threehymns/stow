@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, LetterText, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   useSettingsStore,
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { Edit2, Check, X } from "lucide-react";
 import { Keybinding } from "@/components/ui/Keybinding";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
@@ -85,55 +86,60 @@ export default function Settings() {
 
               <Separator />
 
-              {/* Regular settings in this category */}
-              {category.settings && category.settings.length > 0 && (
-                <Card>
-                  <CardContent className="pt-6 space-y-6">
-                    {category.settings.map((setting) => (
+              <Card>
+                <CardContent className="pt-6 space-y-6">
+                  {/* Regular settings in this category */}
+                  {categoryId === "appearance" && (
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium flex items-center"><LetterText className="h-5 w-5 mr-2" /> Font Settings</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {["uiFont", "editorFont"].map((field) => {
+                          const setting = category.settings.find((s) => s.id === field)!;
+                          return (
+                            <div key={setting.id} className="space-y-2">
+                              <Label htmlFor={setting.id} className="text-base font-medium">
+                                {setting.name}
+                              </Label>
+                              <Select
+                                value={getSetting(setting.id) as string}
+                                onValueChange={(value) => setSetting(setting.id, value)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select font" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(setting.options as { value: string; label?: string }[]).map(
+                                    (opt) => (
+                                      <SelectItem key={opt.value} value={opt.value}>
+                                        {opt.label ?? opt.value}
+                                      </SelectItem>
+                                    )
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-4 p-4 border rounded space-y-2">
+                        <p style={{ fontFamily: "var(--font-ui)" }}>
+                          UI Preview: The quick brown fox jumps over the lazy dog.
+                        </p>
+                        <p style={{ fontFamily: "var(--font-editor)" }}>
+                          Editor Preview: The quick brown fox jumps over the lazy dog.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {category.settings
+                    .filter((s) => s.id !== "uiFont" && s.id !== "editorFont")
+                    .map((setting) => (
                       <div key={setting.id} className="space-y-4">
                         {renderSetting(setting, getSetting, setSetting)}
                       </div>
                     ))}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Subcategories */}
-              {Object.entries(category._subcategories).length > 0 && (
-                <div className="space-y-4">
-                  <Tabs defaultValue={Object.keys(category._subcategories)[0]}>
-                    <TabsList>
-                      {Object.keys(category._subcategories).map(
-                        (subcategory) => (
-                          <TabsTrigger key={subcategory} value={subcategory}>
-                            {subcategory}
-                          </TabsTrigger>
-                        ),
-                      )}
-                    </TabsList>
-
-                    {Object.entries(category._subcategories).map(
-                      ([subcategory, subcategorySettings]) => (
-                        <TabsContent key={subcategory} value={subcategory}>
-                          <Card>
-                            <CardContent className="pt-6 space-y-6">
-                              {(subcategorySettings as SettingType[]).map((setting) => (
-                                <div key={setting.id} className="space-y-4">
-                                  {renderSetting(
-                                    setting,
-                                    getSetting,
-                                    setSetting,
-                                  )}
-                                </div>
-                              ))}
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-                      ),
-                    )}
-                  </Tabs>
-                </div>
-              )}
+                </CardContent>
+              </Card>
             </div>
           ))}
         </div>
@@ -323,7 +329,7 @@ function renderSetting(
                 setSetting(setting.id, value);
               }
             }}
-            className="justify-start"
+            className="justify-start flex-wrap"
           >
             {(setting.options as { value: string; icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>; label?: string }[]).map((option) => {
               let icon: React.ReactNode | null = null;

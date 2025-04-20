@@ -64,7 +64,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter var", "sans-serif"],
+        sans: ["var(--font-ui)", "sans-serif"],
+        editor: ["var(--font-editor)", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
