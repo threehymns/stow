@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createElement } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -62,6 +63,11 @@ export function CommandBar() {
 
   // Group settings by category
   const groupedSettings: GroupedSettings = getGroupedSettings();
+
+  // Find keybindings setting
+  const keybindingsSetting = settingsDefinitions.find(
+    (s) => s.id === 'keybindings' && s.type === 'keybindings'
+  );
 
   return (
     <>
@@ -136,14 +142,12 @@ export function CommandBar() {
 
           {/* Shortcut actions from settings */}
           <CommandGroup heading="Shortcuts">
-            {settingsDefinitions.find((s): s is Extract<SettingType, { type: 'keybindings' }> =>
-              s.id === 'keybindings' && s.type === 'keybindings'
-            )?.actions.map((action) => (
+            {keybindingsSetting?.actions.map((action) => (
               <CommandItem
                 key={action.id}
                 onSelect={() => runCommand(() => commandCenter.emit(action.id))}
               >
-                <span>{action.name}</span>
+                <span>{action.label}</span>
                 <CommandShortcut>
                   <Keybinding command={action.id} />
                 </CommandShortcut>
@@ -163,7 +167,7 @@ export function CommandBar() {
                     key={setting.id}
                     onSelect={() => handleCommandSelection(setting)}
                   >
-                    {setting.icon && (
+                    {'icon' in setting && setting.icon && (
                       <setting.icon className="mr-2 h-4 w-4" />
                     )}
                     <span>{setting.name}</span>
@@ -175,16 +179,16 @@ export function CommandBar() {
                   <CommandItem
                     key={setting.id}
                     onSelect={() => {
-                      setSetting(setting.id, !getSetting(setting.id));
+                      setSetting(setting.id as any, !getSetting(setting.id as any));
                       setOpen(false);
                     }}
                   >
-                    {setting.icon && (
+                    {'icon' in setting && setting.icon && (
                       <setting.icon className="mr-2 h-4 w-4" />
                     )}
                     <span>Toggle {setting.name}</span>
                     <CommandShortcut>
-                      {getSetting(setting.id) ? "On" : "Off"}
+                      {getSetting(setting.id as any) ? "On" : "Off"}
                     </CommandShortcut>
                   </CommandItem>
                 ))}
@@ -200,9 +204,9 @@ export function CommandBar() {
       >
         <CommandInput placeholder="Select an option..." />
         <CommandList>
-          <CommandGroup heading={currentSubmenu?.name}>
-            {currentSubmenu?.type === "select" &&
-              currentSubmenu.options.map((optionRaw) => {
+          {currentSubmenu?.type === "select" && (
+            <CommandGroup heading={currentSubmenu?.name}>
+              {currentSubmenu.options.map((optionRaw) => {
                 const option: { value: string; label?: string; icon?: LucideIcon } =
                   typeof optionRaw === "string"
                     ? { value: optionRaw }
@@ -213,7 +217,7 @@ export function CommandBar() {
                     key={option.value}
                     onSelect={() =>
                       runCommand(() => {
-                        setSetting(currentSubmenu.id, option.value);
+                        setSetting(currentSubmenu.id as any, option.value);
                         toast(`${currentSubmenu.name} set to ${option.value}`);
                       })
                     }
@@ -230,7 +234,8 @@ export function CommandBar() {
                   </CommandItem>
                 );
               })}
-          </CommandGroup>
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>

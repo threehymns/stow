@@ -1,3 +1,4 @@
+
 import { useSettingsStore } from "@/store/settingsStore";
 import { usePressedKeys } from "./KeyPressContext";
 import type { CommandId } from "@/store/settingsConfig";
@@ -33,10 +34,18 @@ export function Keybinding({ command, combo: comboProvided }: KeybindingProps) {
         return k;
     }
   };
-  const bindings = useSettingsStore(
-    state => state.getSetting("keybindings") as Record<string, string[]>
-  );
-  const comboStr = comboProvided ?? (command ? bindings[command]?.[0] : "") ?? "";
+  
+  let bindings: Record<string, string[]> | undefined;
+  try {
+    bindings = useSettingsStore(
+      state => state.getSetting("keybindings") as Record<string, string[]>
+    );
+  } catch (error) {
+    console.warn("Failed to get keybindings from store:", error);
+    bindings = {};
+  }
+  
+  const comboStr = comboProvided ?? (command && bindings ? bindings[command]?.[0] : "") ?? "";
   if (!comboStr) return null;
   const parts = comboStr.split("+");
   return (

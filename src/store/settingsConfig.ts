@@ -1,3 +1,4 @@
+
 import { Sun, Moon, Monitor, Calendar, Layout, Eye, Palette, Keyboard, SortAsc } from "lucide-react";
 import type { SettingCategory, SettingType } from "@/types/settings";
 import { themes } from "@/lib/themes";
@@ -155,13 +156,21 @@ export const settings = [
         defaultValue: ['Ctrl+K'],
       },
     ],
+    initialValue: {
+      newNote: ['Ctrl+Alt+N'],
+      newFolder: ['Ctrl+Alt+F'],
+      sync: ['Ctrl+S'],
+      commandBar: ['Ctrl+Shift+P'],
+      openSettings: ['Ctrl+,'],
+      searchNotes: ['Ctrl+K'],
+    }
   },
 ] as const;
 
 // Infer CommandId union from keybindings action IDs
 export type CommandId =
   Extract<
-    SettingType,
+    typeof settings[number],
     { type: 'keybindings' }
   >['actions'][number]['id'];
 
@@ -169,7 +178,7 @@ export type CommandId =
 export interface GroupedSettings {
   [categoryId: string]: {
     _category?: SettingCategory;
-    settings?: SettingType[];
+    settings: SettingType[];
     _subcategories: {
       [subcategoryId: string]: SettingType[];
     };
@@ -179,23 +188,23 @@ export interface GroupedSettings {
 /** Helper: Group settings by category and subcategory */
 export function getGroupedSettings(): GroupedSettings {
   return settings.reduce<GroupedSettings>((acc, setting) => {
-    if (!acc[setting.category]) {
-      acc[setting.category] = {
-        _category: settingsCategories.find((cat) => cat.id === setting.category),
+    const categoryId = setting.category || 'uncategorized';
+    
+    if (!acc[categoryId]) {
+      acc[categoryId] = {
+        _category: settingsCategories.find((cat) => cat.id === categoryId),
+        settings: [],
         _subcategories: {},
       };
     }
 
-    if (setting.subcategory) {
-      if (!acc[setting.category]._subcategories[setting.subcategory]) {
-        acc[setting.category]._subcategories[setting.subcategory] = [];
+    if ('subcategory' in setting && setting.subcategory) {
+      if (!acc[categoryId]._subcategories[setting.subcategory]) {
+        acc[categoryId]._subcategories[setting.subcategory] = [];
       }
-      acc[setting.category]._subcategories[setting.subcategory].push(setting);
+      acc[categoryId]._subcategories[setting.subcategory].push(setting as SettingType);
     } else {
-      if (!acc[setting.category].settings) {
-        acc[setting.category].settings = [];
-      }
-      acc[setting.category].settings.push(setting);
+      acc[categoryId].settings.push(setting as SettingType);
     }
 
     return acc;

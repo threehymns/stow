@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -94,27 +95,31 @@ export default function Settings() {
                       <Label className="text-base font-medium flex items-center"><LetterText className="h-5 w-5 mr-2" /> Font Settings</Label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {["uiFont", "editorFont"].map((field) => {
-                          const setting = category.settings.find((s) => s.id === field)!;
+                          const setting = category.settings.find((s) => s.id === field);
+                          if (!setting) return null;
                           return (
                             <div key={setting.id} className="space-y-2">
                               <Label htmlFor={setting.id} className="text-base font-medium">
                                 {setting.name}
                               </Label>
                               <Select
-                                value={getSetting(setting.id) as string}
-                                onValueChange={(value) => setSetting(setting.id, value)}
+                                value={getSetting(setting.id as any) as string}
+                                onValueChange={(value) => setSetting(setting.id as any, value)}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select font" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {(setting.options as { value: string; label?: string }[]).map(
-                                    (opt) => (
-                                      <SelectItem key={opt.value} value={opt.value}>
-                                        {opt.label ?? opt.value}
-                                      </SelectItem>
-                                    )
-                                  )}
+                                  {(setting.type === "select" && setting.options.map(
+                                    (opt) => {
+                                      const option = typeof opt === 'string' ? { value: opt } : opt;
+                                      return (
+                                        <SelectItem key={option.value} value={option.value}>
+                                          {option.label ?? option.value}
+                                        </SelectItem>
+                                      );
+                                    }
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -148,12 +153,23 @@ export default function Settings() {
   );
 }
 
-function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSetting, }: { action: { id: string; name: string }; bindings: unknown; defaultBindings: Record<string, string[]>; setSetting: (id: string, value: any) => void; }) {
-  // Each action's value is now a string[]
-  const bindings = (typeof rawBindings === 'object' && rawBindings) ? (rawBindings as Record<string, string[]>) : defaultBindings;
+function KeybindingField({ 
+  action, 
+  bindings, 
+  defaultBindings, 
+  setSetting 
+}: { 
+  action: { id: string; label: string; description?: string }; 
+  bindings: Record<string, string[]> | undefined; 
+  defaultBindings: Record<string, string[]>;
+  setSetting: (id: string, value: any) => void; 
+}) {
+  // Add safety check for bindings
+  const bindingsObj = bindings || {};
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [combo, setCombo] = useState("");
-  const keybinds: string[] = Array.isArray(bindings[action.id]) ? bindings[action.id] : defaultBindings[action.id] || [];
+  const keybinds: string[] = Array.isArray(bindingsObj[action.id]) ? 
+    bindingsObj[action.id] : (defaultBindings[action.id] || []);
 
   useEffect(() => { if (editingIdx === null) setCombo(""); }, [bindings, editingIdx]);
 
@@ -177,7 +193,7 @@ function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSe
       } else {
         newKeybinds[idx] = combo;
       }
-      setSetting("keybindings", { ...bindings, [action.id]: newKeybinds });
+      setSetting("keybindings", { ...(bindings || {}), [action.id]: newKeybinds });
     }
     setEditingIdx(null);
     setCombo("");
@@ -185,18 +201,18 @@ function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSe
 
   const remove = (idx: number) => {
     const newKeybinds = keybinds.filter((_, i) => i !== idx);
-    setSetting("keybindings", { ...bindings, [action.id]: newKeybinds });
+    setSetting("keybindings", { ...(bindings || {}), [action.id]: newKeybinds });
   };
 
   const reset = () => {
-    setSetting("keybindings", { ...bindings, [action.id]: defaultBindings[action.id] });
+    setSetting("keybindings", { ...(bindings || {}), [action.id]: defaultBindings[action.id] });
     setEditingIdx(null);
     setCombo("");
   };
 
   return (
     <div className="flex items-center gap-4 p-3 border-b border-muted group hover:bg-muted/20 transition-colors">
-      <Label className="text-base font-medium min-w-[120px] mr-2">{action.name}</Label>
+      <Label className="text-base font-medium min-w-[120px] mr-2">{action.label}</Label>
       <div className="flex-1 flex items-center flex-wrap gap-2">
         {keybinds.map((bind, idx) => (
           <span key={bind + idx} className="flex items-center gap-1 relative group/keybind">
@@ -297,8 +313,8 @@ function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSe
 
 function renderSetting(
   setting: SettingType,
-  getSetting: (id: string) => string | boolean | number,
-  setSetting: (id: string, value: string | boolean | number) => void,
+  getSetting: (id: string) => string | boolean | number | Record<string, string[]>,
+  setSetting: (id: string, value: string | boolean | number | Record<string, string[]>) => void,
 ) {
   return (
     <>
@@ -326,7 +342,7 @@ function renderSetting(
             value={getSetting(setting.id).toString()}
             onValueChange={(value: string) => {
               if (value !== undefined) {
-                setSetting(setting.id, value);
+                setSetting(setting.id as any, value);
               }
             }}
             className="justify-start flex-wrap"
@@ -388,7 +404,7 @@ function renderSetting(
             id={`toggle-${setting.id}`}
             checked={getSetting(setting.id) as boolean}
             onCheckedChange={(checked: boolean) => {
-              setSetting(setting.id, checked);
+              setSetting(setting.id as any, checked);
             }}
           />
         </div>
@@ -400,8 +416,8 @@ function renderSetting(
             <KeybindingField
               key={action.id}
               action={action}
-              bindings={getSetting('keybindings')}
-              defaultBindings={setting.initialValue as Record<string, string[]>}
+              bindings={getSetting('keybindings') as Record<string, string[]>}
+              defaultBindings={setting.initialValue}
               setSetting={setSetting}
             />
           ))}
