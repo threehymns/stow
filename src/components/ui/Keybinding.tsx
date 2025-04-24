@@ -35,11 +35,13 @@ export function Keybinding({ command, combo: comboProvided }: KeybindingProps) {
     }
   };
   
+  // First call the hook to get the state
+  const settingsState = useSettingsStore(state => state);
+
+  // Then safely access the keybindings from the state
   let bindings: Record<string, string[]> | undefined;
   try {
-    bindings = useSettingsStore(
-      state => state.getSetting("keybindings") as Record<string, string[]>
-    );
+    bindings = settingsState.getSetting("keybindings") as Record<string, string[]>;
   } catch (error) {
     console.warn("Failed to get keybindings from store:", error);
     bindings = {};
