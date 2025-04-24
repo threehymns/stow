@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -32,12 +32,13 @@ export function SearchCommandDialog() {
   }, []);
 
   // Register with command center
+  const handleOpenDialog = useCallback(() => setOpen(true), []);
   useEffect(() => {
-    commandCenter.on("searchNotes", () => setOpen(true));
+    commandCenter.on("searchNotes", handleOpenDialog);
     return () => {
-      commandCenter.off("searchNotes", () => setOpen(true));
+      commandCenter.off("searchNotes", handleOpenDialog);
     };
-  }, []);
+  }, [handleOpenDialog]);
 
   const handleSearch = (searchTerm: string) => {
     if (!searchTerm) {
