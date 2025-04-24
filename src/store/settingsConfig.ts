@@ -1,4 +1,3 @@
-
 import { Sun, Moon, Monitor, Calendar, Layout, Eye, Palette, Keyboard, SortAsc } from "lucide-react";
 import type { SettingCategory, SettingType } from "@/types/settings";
 import { themes } from "@/lib/themes";
@@ -185,7 +184,11 @@ export interface GroupedSettings {
   };
 }
 
-/** Helper: Group settings by category and subcategory */
+/**
+ * Groups all settings by their category and subcategory.
+ *
+ * @returns An object mapping each category to its grouped settings and subcategories.
+ */
 export function getGroupedSettings(): GroupedSettings {
   return settings.reduce<GroupedSettings>((acc, setting) => {
     const categoryId = setting.category || 'uncategorized';
@@ -211,7 +214,11 @@ export function getGroupedSettings(): GroupedSettings {
   }, {});
 }
 
-/** Helper: Get all setting IDs for persistence */
+/**
+ * Returns an array of all setting IDs for use in persistence operations.
+ *
+ * @returns An array of setting identifier strings.
+ */
 export function getPersistenceKeys(): string[] {
   return settings.map((s) => s.id);
 }

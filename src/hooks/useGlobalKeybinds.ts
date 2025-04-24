@@ -1,12 +1,14 @@
-
 import { useEffect } from "react";
 import { settings } from "@/store/settingsConfig";
 import { useSettingsStore } from "@/store/settingsStore";
 import commandCenter from "@/hooks/commandCenter";
 
 /**
- * Register all keybindings from settingsConfig to emit commandCenter events.
- * Pressing any configured key combo emits its action ID message.
+ * Registers global keyboard shortcuts based on user settings and emits corresponding command events.
+ *
+ * Sets up keydown listeners for all configured keybindings. When a registered key combination is pressed, the associated action ID is emitted through the command center.
+ *
+ * @remark Listeners are automatically cleaned up when keybindings change or the component unmounts.
  */
 export function useGlobalKeybinds() {
   const keybindings = useSettingsStore(

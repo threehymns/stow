@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createElement } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -26,6 +25,13 @@ import { getThemeById } from "@/lib/themes";
 import commandCenter, { useCommand } from "@/hooks/commandCenter";
 import { Keybinding } from "@/components/ui/Keybinding";
 
+/**
+ * Displays a command palette UI for quickly accessing notes, folders, shortcuts, and settings.
+ *
+ * Provides a searchable interface with grouped commands for navigating notes, creating notes or folders, executing shortcut actions, and adjusting settings. Supports nested submenus for select-type settings and immediate toggling for toggle-type settings.
+ *
+ * @remark Prevents running multiple commands simultaneously to avoid conflicting actions.
+ */
 export function CommandBar() {
   const [open, setOpen] = useState(false);
   // toggle open via commandCenter event

@@ -15,6 +15,12 @@ import { useCommand } from "@/hooks/commandCenter";
 import { KeyPressProvider } from "@/components/ui/KeyPressContext";
 import { SearchCommandDialog } from "./components/SearchCommandDialog";
 
+/**
+ * Listens for the "openSettings" command and navigates to the settings page when triggered.
+ *
+ * @remark
+ * This component does not render any UI and should be included within a router context.
+ */
 export function CommandRouter() {
   const navigate = useNavigate();
   useCommand("openSettings", () => navigate("/settings"));
@@ -23,6 +29,11 @@ export function CommandRouter() {
 
 const queryClient = new QueryClient();
 
+/**
+ * Synchronizes application settings using the {@link useSettingsSync} hook.
+ *
+ * This component does not render any UI.
+ */
 function SettingsSyncer() {
   useSettingsSync();
   return null;

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   CommandDialog,
@@ -13,6 +12,13 @@ import useNoteStore from "@/store/noteStore";
 import commandCenter from "@/hooks/commandCenter";
 import { toast } from "sonner";
 
+/**
+ * Displays a searchable command dialog for quickly finding and opening notes.
+ *
+ * The dialog can be toggled with the Ctrl+K or Cmd+K keyboard shortcut, or opened via a "searchNotes" event from the command center. Users can search notes by title or content, and selecting a note sets it as active and shows a success notification.
+ *
+ * @remark Note content previews are sanitized to remove HTML tags before display.
+ */
 export function SearchCommandDialog() {
   const [open, setOpen] = useState(false);
   const { notes, setActiveNoteId } = useNoteStore();

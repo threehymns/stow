@@ -1,4 +1,3 @@
-
 import { useSettingsStore } from "@/store/settingsStore";
 import { usePressedKeys } from "./KeyPressContext";
 import type { CommandId } from "@/store/settingsConfig";
@@ -11,7 +10,16 @@ interface KeybindingProps {
 }
 
 /**
- * Renders the first keybinding for a command as styled <kbd> elements.
+ * Displays a keyboard shortcut as styled <kbd> elements for a given command or custom combo string.
+ *
+ * If a {@link combo} prop is provided, it is used as the shortcut; otherwise, the first keybinding for the {@link command} is displayed. Each key in the shortcut is rendered as a separate <kbd> element, visually indicating if it is currently pressed.
+ *
+ * @param command - The command ID whose keybinding should be displayed, if {@link combo} is not provided.
+ * @param combo - An explicit shortcut string (e.g., "Ctrl+S") to display instead of looking up a command.
+ *
+ * @returns The rendered keybinding as styled elements, or null if no shortcut is available.
+ *
+ * @remark If keybindings cannot be retrieved from the settings store, the component logs a warning and renders nothing.
  */
 export function Keybinding({ command, combo: comboProvided }: KeybindingProps) {
   const pressed = usePressedKeys();
