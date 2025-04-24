@@ -25,7 +25,7 @@ export const settingsCategories: SettingCategory[] = [
 ];
 
 /** Settings metadata */
-export const settings: SettingType[] = [
+export const settings = [
   {
     name: "Theme Mode",
     id: "theme",
@@ -114,27 +114,49 @@ export const settings: SettingType[] = [
     description: "Show creation dates under note titles in the sidebar",
   },
   {
-    name: "Keyboard Shortcuts",
-    id: "keybindings",
-    type: "keybindings",
-    initialValue: {
-      newNote: ["Ctrl+Alt+N"],
-      newFolder: ["Ctrl+Alt+F"],
-      sync: ["Ctrl+S"],
-      commandBar: ["Ctrl+Shift+P"],
-      openSettings: ["Ctrl+,"]
-    },
+    id: 'keybindings',
+    type: 'keybindings' as const,
+    label: 'Keyboard Shortcuts',
     actions: [
-      { id: "newNote", name: "New Note" },
-      { id: "newFolder", name: "New Folder" },
-      { id: "sync", name: "Sync Notes" },
-      { id: "commandBar", name: "Command Bar" },
-      { id: "openSettings", name: "Open Settings" },
+      {
+        id: 'newNote',
+        label: 'New Note',
+        description: 'Create a new note',
+        defaultValue: ['Ctrl+Alt+N'],
+      },
+      {
+        id: 'newFolder',
+        label: 'New Folder',
+        description: 'Create a new folder',
+        defaultValue: ['Ctrl+Alt+F'],
+      },
+      {
+        id: 'sync',
+        label: 'Sync Notes',
+        description: 'Sync notes with the server',
+        defaultValue: ['Ctrl+S'],
+      },
+      {
+        id: 'commandBar',
+        label: 'Command Bar',
+        description: 'Open the command bar',
+        defaultValue: ['Ctrl+Shift+P'],
+      },
+      {
+        id: 'openSettings',
+        label: 'Open Settings',
+        description: 'Open the settings dialog',
+        defaultValue: ['Ctrl+,'],
+      },
+      {
+        id: 'searchNotes',
+        label: 'Search Notes',
+        description: 'Open the search command dialog',
+        defaultValue: ['Ctrl+K'],
+      },
     ],
-    category: "shortcuts",
-    description: "Edit keyboard shortcuts for actions",
   },
-];
+] as const;
 
 // Infer CommandId union from keybindings action IDs
 export type CommandId =

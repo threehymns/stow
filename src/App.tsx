@@ -13,6 +13,7 @@ import { useGlobalKeybinds } from "@/hooks/useGlobalKeybinds";
 import { useNavigate } from "react-router-dom";
 import { useCommand } from "@/hooks/commandCenter";
 import { KeyPressProvider } from "@/components/ui/KeyPressContext";
+import { SearchCommandDialog } from "./components/SearchCommandDialog";
 
 export function CommandRouter() {
   const navigate = useNavigate();
@@ -28,7 +29,6 @@ function SettingsSyncer() {
 }
 
 const App = () => {
-  // Register all global keybindings to emit events
   useGlobalKeybinds();
   return (
     <KeyPressProvider>
@@ -39,13 +39,12 @@ const App = () => {
             <TooltipProvider>
               <Sonner richColors />
               <BrowserRouter>
-                {/* Global keybinds handled via useGlobalKeybinds() */}
                 <CommandRouter />
                 <CommandBar />
+                <SearchCommandDialog />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/settings" element={<Settings />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
