@@ -176,8 +176,11 @@ function KeybindingField({
   action: { id: string; label: string; description?: string }; 
   bindings: Record<string, string[]> | undefined; 
   defaultBindings: Record<string, string[]>;
-  setSetting: (id: string, value: any) => void; 
+-  setSetting: (id: string, value: any) => void; 
++  setSetting: (id: string, value: string | boolean | number | Record<string, string[]>) => void; 
 }) {
+  // ...
+}
   // Add safety check for bindings
   const bindingsObj = bindings || {};
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -366,7 +369,7 @@ function renderSetting(
             value={getSetting(setting.id).toString()}
             onValueChange={(value: string) => {
               if (value !== undefined) {
-                setSetting(setting.id as any, value);
+                setSetting(setting.id, value);
               }
             }}
             className="justify-start flex-wrap"
@@ -428,7 +431,7 @@ function renderSetting(
             id={`toggle-${setting.id}`}
             checked={getSetting(setting.id) as boolean}
             onCheckedChange={(checked: boolean) => {
-              setSetting(setting.id as any, checked);
+              setSetting(setting.id, checked);
             }}
           />
         </div>
