@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import useNoteStore from "@/store/noteStore";
 import commandCenter from "@/hooks/commandCenter";
 import { toast } from "sonner";
+import { FileText } from "lucide-react";
 
 /**
  * Displays a searchable command dialog for quickly finding and opening notes.
@@ -24,19 +25,6 @@ export function SearchCommandDialog() {
   const { notes, setActiveNoteId } = useNoteStore();
   const [searchResults, setSearchResults] = useState<typeof notes>([]);
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    // Register command handler for Ctrl+K
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
-      }
-    };
-
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
 
   // Register with command center
   const handleOpenDialog = useCallback(() => {
@@ -87,14 +75,21 @@ export function SearchCommandDialog() {
               <CommandItem
                 key={note.id}
                 onSelect={() => handleSelectNote(note.id)}
-                className="flex flex-col items-start gap-1"
               >
-                <div className="font-medium">{note.title}</div>
-                {note.content && (
-                  <div className="text-sm text-muted-foreground line-clamp-1">
-                    {note.content.replace(/<[^>]*>/g, '')}
-                  </div>
-                )}
+                <FileText className="mr-2 h-4 w-4" />
+                <div className="flex flex-col">
+                  <div className="font-medium">{note.title}</div>
+                  {note.content && (
+                    <div className="text-[0.75rem] text-muted-foreground line-clamp-1">
+                      {note.content.split(/<br\s*\/?>|<\/?li>|<\/?p>/gi)
+                        .filter(line =>
+                          line.toLowerCase().includes(searchTerm.toLowerCase())
+                        )
+                        .join('\n')
+                        .replace(/<[^>]*>/g, '')}
+                    </div>
+                  )}
+                </div>
               </CommandItem>
             ))}
           </CommandGroup>
