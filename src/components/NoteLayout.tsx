@@ -10,27 +10,29 @@ import {
 } from "@/components/ui/tooltip";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import HeaderActions from "./HeaderActions";
-import { useEffect, useState, useRef, useCallback } from "react";
-import useNoteStore from "@/store/noteStore";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import useNoteStore from "@/store/noteStore";
+import { AuthStatus } from "./auth/AuthStatus";
 import { toast } from "sonner";
 
 export function NoteLayout() {
   const { user, loading } = useAuth();
 
-  // Subscribe only to necessary parts of the note store
-  const activeNoteId = useNoteStore(state => state.activeNoteId);
-  const isSynced = useNoteStore(state => state.isSynced);
+  // Only subscribe to what's actually needed
+  const activeNoteId    = useNoteStore(state => state.activeNoteId);
+  const isSynced        = useNoteStore(state => state.isSynced);
   const realtimeEnabled = useNoteStore(state => state.realtimeEnabled);
-  const syncAll = useNoteStore(state => state.syncAll);
-  const resetStore = useNoteStore(state => state.resetStore);
+  const syncAll         = useNoteStore(state => state.syncAll);
+  const resetStore      = useNoteStore(state => state.resetStore);
   const disableRealtime = useNoteStore(state => state.disableRealtime);
   const _enableRealtime = useNoteStore(state => state.enableRealtime);
 
   const enableRealtime = _enableRealtime as (userId: string) => void;
+
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Memoize the sync function to avoid recreating it on every render
+  // Memoize sync function to prevent recreation
   const handleSync = useCallback(async () => {
     if (user && !loading && !isSynced && !isSyncing) {
       console.log("Syncing with Supabase for user:", user.id);
@@ -52,7 +54,7 @@ export function NoteLayout() {
 
   // Sync notes with Supabase when user signs in
   useEffect(() => {
-    let isActive = true; // for preventing state updates after unmount
+    let isActive = true;
 
     handleSync();
 

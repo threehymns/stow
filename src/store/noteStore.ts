@@ -16,13 +16,13 @@ import {
 } from "@/services/noteService";
 import { SyncManager } from "@/services/SyncManager";
 
-  // Selectors for granular subscriptions
-  export const selectNotes       = (state: NoteState) => state.notes
-  export const selectFolders     = (state: NoteState) => state.folders
-  export const selectActiveId    = (state: NoteState) => state.activeNoteId
-  export const selectIsSynced    = (state: NoteState) => state.isSynced
-  export const selectRealtime    = (state: NoteState) => state.realtimeEnabled
-  export const selectLastSync    = (state: NoteState) => state.lastSyncTimestamp
+// Selectors for granular subscriptions
+export const selectNotes       = (state: NoteState) => state.notes;
+export const selectFolders     = (state: NoteState) => state.folders;
+export const selectActiveId    = (state: NoteState) => state.activeNoteId;
+export const selectIsSynced    = (state: NoteState) => state.isSynced;
+export const selectRealtime    = (state: NoteState) => state.realtimeEnabled;
+export const selectLastSync    = (state: NoteState) => state.lastSyncTimestamp;
 
 /**
  * Debounce utility
