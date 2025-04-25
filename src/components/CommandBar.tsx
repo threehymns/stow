@@ -185,7 +185,7 @@ export function CommandBar() {
                   <CommandItem
                     key={setting.id}
                     onSelect={() => {
-                      setSetting(setting.id as any, !getSetting(setting.id as any));
+                      setSetting(setting.id, !getSetting(setting.id));
                       setOpen(false);
                     }}
                   >
@@ -194,7 +194,7 @@ export function CommandBar() {
                     )}
                     <span>Toggle {setting.name}</span>
                     <CommandShortcut>
-                      {getSetting(setting.id as any) ? "On" : "Off"}
+                      {getSetting(setting.id) ? "On" : "Off"}
                     </CommandShortcut>
                   </CommandItem>
                 ))}
@@ -223,7 +223,7 @@ export function CommandBar() {
                     key={option.value}
                     onSelect={() =>
                       runCommand(() => {
-                        setSetting(currentSubmenu.id as any, option.value);
+                        setSetting(currentSubmenu.id, option.value);
                         toast(`${currentSubmenu.name} set to ${option.value}`);
                       })
                     }
