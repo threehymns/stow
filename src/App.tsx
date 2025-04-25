@@ -13,7 +13,14 @@ import { useGlobalKeybinds } from "@/hooks/useGlobalKeybinds";
 import { useNavigate } from "react-router-dom";
 import { useCommand } from "@/hooks/commandCenter";
 import { KeyPressProvider } from "@/components/ui/KeyPressContext";
+import { SearchCommandDialog } from "./components/SearchCommandDialog";
 
+/**
+ * Listens for the "openSettings" command and navigates to the settings page when triggered.
+ *
+ * @remark
+ * This component does not render any UI and should be included within a router context.
+ */
 export function CommandRouter() {
   const navigate = useNavigate();
   useCommand("openSettings", () => navigate("/settings"));
@@ -22,13 +29,17 @@ export function CommandRouter() {
 
 const queryClient = new QueryClient();
 
+/**
+ * Synchronizes application settings using the {@link useSettingsSync} hook.
+ *
+ * This component does not render any UI.
+ */
 function SettingsSyncer() {
   useSettingsSync();
   return null;
 }
 
 const App = () => {
-  // Register all global keybindings to emit events
   useGlobalKeybinds();
   return (
     <KeyPressProvider>
@@ -39,13 +50,12 @@ const App = () => {
             <TooltipProvider>
               <Sonner richColors />
               <BrowserRouter>
-                {/* Global keybinds handled via useGlobalKeybinds() */}
                 <CommandRouter />
                 <CommandBar />
+                <SearchCommandDialog />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/settings" element={<Settings />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

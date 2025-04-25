@@ -25,6 +25,13 @@ import { getThemeById } from "@/lib/themes";
 import commandCenter, { useCommand } from "@/hooks/commandCenter";
 import { Keybinding } from "@/components/ui/Keybinding";
 
+/**
+ * Displays a command palette UI for quickly accessing notes, folders, shortcuts, and settings.
+ *
+ * Provides a searchable interface with grouped commands for navigating notes, creating notes or folders, executing shortcut actions, and adjusting settings. Supports nested submenus for select-type settings and immediate toggling for toggle-type settings.
+ *
+ * @remark Prevents running multiple commands simultaneously to avoid conflicting actions.
+ */
 export function CommandBar() {
   const [open, setOpen] = useState(false);
   // toggle open via commandCenter event
@@ -62,6 +69,11 @@ export function CommandBar() {
 
   // Group settings by category
   const groupedSettings: GroupedSettings = getGroupedSettings();
+
+  // Find keybindings setting
+  const keybindingsSetting = settingsDefinitions.find(
+    (s) => s.id === 'keybindings' && s.type === 'keybindings'
+  );
 
   return (
     <>
@@ -136,14 +148,12 @@ export function CommandBar() {
 
           {/* Shortcut actions from settings */}
           <CommandGroup heading="Shortcuts">
-            {settingsDefinitions.find((s): s is Extract<SettingType, { type: 'keybindings' }> =>
-              s.id === 'keybindings' && s.type === 'keybindings'
-            )?.actions.map((action) => (
+            {keybindingsSetting?.actions.map((action) => (
               <CommandItem
                 key={action.id}
                 onSelect={() => runCommand(() => commandCenter.emit(action.id))}
               >
-                <span>{action.name}</span>
+                <span>{action.label}</span>
                 <CommandShortcut>
                   <Keybinding command={action.id} />
                 </CommandShortcut>
@@ -163,7 +173,7 @@ export function CommandBar() {
                     key={setting.id}
                     onSelect={() => handleCommandSelection(setting)}
                   >
-                    {setting.icon && (
+                    {'icon' in setting && setting.icon && (
                       <setting.icon className="mr-2 h-4 w-4" />
                     )}
                     <span>{setting.name}</span>
@@ -179,7 +189,7 @@ export function CommandBar() {
                       setOpen(false);
                     }}
                   >
-                    {setting.icon && (
+                    {'icon' in setting && setting.icon && (
                       <setting.icon className="mr-2 h-4 w-4" />
                     )}
                     <span>Toggle {setting.name}</span>
@@ -200,9 +210,9 @@ export function CommandBar() {
       >
         <CommandInput placeholder="Select an option..." />
         <CommandList>
-          <CommandGroup heading={currentSubmenu?.name}>
-            {currentSubmenu?.type === "select" &&
-              currentSubmenu.options.map((optionRaw) => {
+          {currentSubmenu?.type === "select" && (
+            <CommandGroup heading={currentSubmenu?.name}>
+              {currentSubmenu.options.map((optionRaw) => {
                 const option: { value: string; label?: string; icon?: LucideIcon } =
                   typeof optionRaw === "string"
                     ? { value: optionRaw }
@@ -230,7 +240,8 @@ export function CommandBar() {
                   </CommandItem>
                 );
               })}
-          </CommandGroup>
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>

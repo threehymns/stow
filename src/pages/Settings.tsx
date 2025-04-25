@@ -22,6 +22,11 @@ import { Edit2, Check, X } from "lucide-react";
 import { Keybinding } from "@/components/ui/Keybinding";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
+/**
+ * Renders the main settings page with categorized settings and a navigable table of contents.
+ *
+ * Displays grouped settings categories in a two-column layout: a sticky sidebar for navigation and a main content area for editing settings. Specialized controls are provided for appearance-related settings, including font selection with live previews.
+ */
 export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
 
@@ -94,7 +99,8 @@ export default function Settings() {
                       <Label className="text-base font-medium flex items-center"><LetterText className="h-5 w-5 mr-2" /> Font Settings</Label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {["uiFont", "editorFont"].map((field) => {
-                          const setting = category.settings.find((s) => s.id === field)!;
+                          const setting = category.settings.find((s) => s.id === field);
+                          if (!setting) return null;
                           return (
                             <div key={setting.id} className="space-y-2">
                               <Label htmlFor={setting.id} className="text-base font-medium">
@@ -108,13 +114,16 @@ export default function Settings() {
                                   <SelectValue placeholder="Select font" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {(setting.options as { value: string; label?: string }[]).map(
-                                    (opt) => (
-                                      <SelectItem key={opt.value} value={opt.value}>
-                                        {opt.label ?? opt.value}
-                                      </SelectItem>
-                                    )
-                                  )}
+                                  {(setting.type === "select" && setting.options.map(
+                                    (opt) => {
+                                      const option = typeof opt === 'string' ? { value: opt } : opt;
+                                      return (
+                                        <SelectItem key={option.value} value={option.value}>
+                                          {option.label ?? option.value}
+                                        </SelectItem>
+                                      );
+                                    }
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -148,12 +157,33 @@ export default function Settings() {
   );
 }
 
-function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSetting, }: { action: { id: string; name: string }; bindings: unknown; defaultBindings: Record<string, string[]>; setSetting: (id: string, value: any) => void; }) {
-  // Each action's value is now a string[]
-  const bindings = (typeof rawBindings === 'object' && rawBindings) ? (rawBindings as Record<string, string[]>) : defaultBindings;
+/**
+ * Renders an interactive field for managing keybindings for a specific action.
+ *
+ * Allows users to view, add, edit, remove, and reset keybindings associated with the given action. Key combinations are captured via keyboard input and updated in the settings.
+ *
+ * @param action - The action for which keybindings are managed, including its id, label, and optional description.
+ * @param bindings - The current keybindings mapping, or undefined if not set.
+ * @param defaultBindings - The default keybindings mapping for all actions.
+ * @param setSetting - Function to update the keybindings setting.
+ */
+function KeybindingField({ 
+  action, 
+  bindings, 
+  defaultBindings, 
+  setSetting 
+}: { 
+  action: { id: string; label: string; description?: string }; 
+  bindings: Record<string, string[]> | undefined; 
+  defaultBindings: Record<string, string[]>;
+  setSetting: (id: string, value: string | boolean | number | Record<string, string[]>) => void; 
+}) {
+  // Add safety check for bindings
+  const bindingsObj = bindings || {};
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [combo, setCombo] = useState("");
-  const keybinds: string[] = Array.isArray(bindings[action.id]) ? bindings[action.id] : defaultBindings[action.id] || [];
+  const keybinds: string[] = Array.isArray(bindingsObj[action.id]) ? 
+    bindingsObj[action.id] : (defaultBindings[action.id] || []);
 
   useEffect(() => { if (editingIdx === null) setCombo(""); }, [bindings, editingIdx]);
 
@@ -177,7 +207,7 @@ function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSe
       } else {
         newKeybinds[idx] = combo;
       }
-      setSetting("keybindings", { ...bindings, [action.id]: newKeybinds });
+      setSetting("keybindings", { ...(bindings || {}), [action.id]: newKeybinds });
     }
     setEditingIdx(null);
     setCombo("");
@@ -185,18 +215,18 @@ function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSe
 
   const remove = (idx: number) => {
     const newKeybinds = keybinds.filter((_, i) => i !== idx);
-    setSetting("keybindings", { ...bindings, [action.id]: newKeybinds });
+    setSetting("keybindings", { ...(bindings || {}), [action.id]: newKeybinds });
   };
 
   const reset = () => {
-    setSetting("keybindings", { ...bindings, [action.id]: defaultBindings[action.id] });
+    setSetting("keybindings", { ...(bindings || {}), [action.id]: defaultBindings[action.id] });
     setEditingIdx(null);
     setCombo("");
   };
 
   return (
     <div className="flex items-center gap-4 p-3 border-b border-muted group hover:bg-muted/20 transition-colors">
-      <Label className="text-base font-medium min-w-[120px] mr-2">{action.name}</Label>
+      <Label className="text-base font-medium min-w-[120px] mr-2">{action.label}</Label>
       <div className="flex-1 flex items-center flex-wrap gap-2">
         {keybinds.map((bind, idx) => (
           <span key={bind + idx} className="flex items-center gap-1 relative group/keybind">
@@ -295,10 +325,20 @@ function KeybindingField({ action, bindings: rawBindings, defaultBindings, setSe
   );
 }
 
+/**
+ * Renders the appropriate input control for a given setting based on its type.
+ *
+ * For "select" settings, displays a labeled toggle group with options, supporting icons and theme previews. For "toggle" settings, renders a labeled switch. For "keybindings" settings, renders a list of keybinding fields for each action.
+ *
+ * @param setting - The setting definition to render.
+ * @param getSetting - Function to retrieve the current value of a setting by its ID.
+ * @param setSetting - Function to update the value of a setting by its ID.
+ * @returns The JSX element representing the setting's input control.
+ */
 function renderSetting(
   setting: SettingType,
-  getSetting: (id: string) => string | boolean | number,
-  setSetting: (id: string, value: string | boolean | number) => void,
+  getSetting: (id: string) => string | boolean | number | Record<string, string[]>,
+  setSetting: (id: string, value: string | boolean | number | Record<string, string[]>) => void,
 ) {
   return (
     <>
@@ -400,8 +440,8 @@ function renderSetting(
             <KeybindingField
               key={action.id}
               action={action}
-              bindings={getSetting('keybindings')}
-              defaultBindings={setting.initialValue as Record<string, string[]>}
+              bindings={getSetting('keybindings') as Record<string, string[]>}
+              defaultBindings={setting.initialValue}
               setSetting={setSetting}
             />
           ))}

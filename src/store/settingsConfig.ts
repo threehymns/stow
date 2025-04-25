@@ -25,7 +25,7 @@ export const settingsCategories: SettingCategory[] = [
 ];
 
 /** Settings metadata */
-export const settings: SettingType[] = [
+export const settings = [
   {
     name: "Theme Mode",
     id: "theme",
@@ -114,32 +114,63 @@ export const settings: SettingType[] = [
     description: "Show creation dates under note titles in the sidebar",
   },
   {
-    name: "Keyboard Shortcuts",
-    id: "keybindings",
-    type: "keybindings",
-    initialValue: {
-      newNote: ["Ctrl+Alt+N"],
-      newFolder: ["Ctrl+Alt+F"],
-      sync: ["Ctrl+S"],
-      commandBar: ["Ctrl+Shift+P"],
-      openSettings: ["Ctrl+,"]
-    },
+    id: 'keybindings',
+    type: 'keybindings' as const,
+    label: 'Keyboard Shortcuts',
+    category: 'shortcuts',
     actions: [
-      { id: "newNote", name: "New Note" },
-      { id: "newFolder", name: "New Folder" },
-      { id: "sync", name: "Sync Notes" },
-      { id: "commandBar", name: "Command Bar" },
-      { id: "openSettings", name: "Open Settings" },
+      {
+        id: 'newNote',
+        label: 'New Note',
+        description: 'Create a new note',
+        defaultValue: ['Ctrl+Alt+N'],
+      },
+      {
+        id: 'newFolder',
+        label: 'New Folder',
+        description: 'Create a new folder',
+        defaultValue: ['Ctrl+Alt+F'],
+      },
+      {
+        id: 'sync',
+        label: 'Sync Notes',
+        description: 'Sync notes with the server',
+        defaultValue: ['Ctrl+S'],
+      },
+      {
+        id: 'commandBar',
+        label: 'Command Bar',
+        description: 'Open the command bar',
+        defaultValue: ['Ctrl+Shift+P'],
+      },
+      {
+        id: 'openSettings',
+        label: 'Open Settings',
+        description: 'Open the settings dialog',
+        defaultValue: ['Ctrl+,'],
+      },
+      {
+        id: 'searchNotes',
+        label: 'Search Notes',
+        description: 'Open the search command dialog',
+        defaultValue: ['Ctrl+K'],
+      },
     ],
-    category: "shortcuts",
-    description: "Edit keyboard shortcuts for actions",
+    initialValue: {
+      newNote: ['Ctrl+Alt+N'],
+      newFolder: ['Ctrl+Alt+F'],
+      sync: ['Ctrl+S'],
+      commandBar: ['Ctrl+Shift+P'],
+      openSettings: ['Ctrl+,'],
+      searchNotes: ['Ctrl+K'],
+    }
   },
-];
+] as const;
 
 // Infer CommandId union from keybindings action IDs
 export type CommandId =
   Extract<
-    SettingType,
+    typeof settings[number],
     { type: 'keybindings' }
   >['actions'][number]['id'];
 
@@ -147,40 +178,48 @@ export type CommandId =
 export interface GroupedSettings {
   [categoryId: string]: {
     _category?: SettingCategory;
-    settings?: SettingType[];
+    settings: SettingType[];
     _subcategories: {
       [subcategoryId: string]: SettingType[];
     };
   };
 }
 
-/** Helper: Group settings by category and subcategory */
+/**
+ * Groups all settings by their category and subcategory.
+ *
+ * @returns An object mapping each category to its grouped settings and subcategories.
+ */
 export function getGroupedSettings(): GroupedSettings {
   return settings.reduce<GroupedSettings>((acc, setting) => {
-    if (!acc[setting.category]) {
-      acc[setting.category] = {
-        _category: settingsCategories.find((cat) => cat.id === setting.category),
+    const categoryId = setting.category || 'uncategorized';
+    
+    if (!acc[categoryId]) {
+      acc[categoryId] = {
+        _category: settingsCategories.find((cat) => cat.id === categoryId),
+        settings: [],
         _subcategories: {},
       };
     }
 
-    if (setting.subcategory) {
-      if (!acc[setting.category]._subcategories[setting.subcategory]) {
-        acc[setting.category]._subcategories[setting.subcategory] = [];
+    if ('subcategory' in setting && setting.subcategory) {
+      if (!acc[categoryId]._subcategories[setting.subcategory]) {
+        acc[categoryId]._subcategories[setting.subcategory] = [];
       }
-      acc[setting.category]._subcategories[setting.subcategory].push(setting);
+      acc[categoryId]._subcategories[setting.subcategory].push(setting as SettingType);
     } else {
-      if (!acc[setting.category].settings) {
-        acc[setting.category].settings = [];
-      }
-      acc[setting.category].settings.push(setting);
+      acc[categoryId].settings.push(setting as SettingType);
     }
 
     return acc;
   }, {});
 }
 
-/** Helper: Get all setting IDs for persistence */
+/**
+ * Returns an array of all setting IDs for use in persistence operations.
+ *
+ * @returns An array of setting identifier strings.
+ */
 export function getPersistenceKeys(): string[] {
   return settings.map((s) => s.id);
 }

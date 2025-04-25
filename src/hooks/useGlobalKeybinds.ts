@@ -1,11 +1,14 @@
 import { useEffect } from "react";
-import { settings as settingsDefinitions } from "@/store/settingsConfig";
+import { settings } from "@/store/settingsConfig";
 import { useSettingsStore } from "@/store/settingsStore";
 import commandCenter from "@/hooks/commandCenter";
 
 /**
- * Register all keybindings from settingsConfig to emit commandCenter events.
- * Pressing any configured key combo emits its action ID message.
+ * Registers global keyboard shortcuts based on user settings and emits corresponding command events.
+ *
+ * Sets up keydown listeners for all configured keybindings. When a registered key combination is pressed, the associated action ID is emitted through the command center.
+ *
+ * @remark Listeners are automatically cleaned up when keybindings change or the component unmounts.
  */
 export function useGlobalKeybinds() {
   const keybindings = useSettingsStore(
@@ -13,16 +16,22 @@ export function useGlobalKeybinds() {
   );
 
   useEffect(() => {
-    const defs = settingsDefinitions.find(
-      (s): s is Extract<typeof settingsDefinitions[number], { type: 'keybindings' }> =>
-        s.id === 'keybindings' && s.type === 'keybindings'
+    // Guard against undefined keybindings during initialization
+    if (!keybindings) {
+      console.warn("Keybindings not yet loaded");
+      return;
+    }
+    
+    const keybindingsSetting = settings.find(
+      (s) => s.id === 'keybindings' && s.type === 'keybindings'
     );
-    if (!defs) return;
+    
+    if (!keybindingsSetting) return;
 
     // Collect listeners for cleanup
     const listeners: ((e: KeyboardEvent) => void)[] = [];
 
-    defs.actions.forEach((action) => {
+    keybindingsSetting.actions.forEach((action) => {
       const combos = keybindings[action.id] || [];
       combos.forEach((combo) => {
         const parts = combo.toLowerCase().split('+');
