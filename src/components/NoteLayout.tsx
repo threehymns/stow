@@ -11,66 +11,64 @@ import {
 import { SidebarProvider } from "@/components/ui/sidebar";
 import HeaderActions from "./HeaderActions";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import useNoteStore from "@/store/noteStore";
 import { AuthStatus } from "./auth/AuthStatus";
 import { toast } from "sonner";
 
 export function NoteLayout() {
   const { user, loading } = useAuth();
-  const {
-    notes,
-    folders,
-    resetStore,
-    isSynced,
-    activeNoteId,
-    enableRealtime: _enableRealtime,
-    disableRealtime,
-    realtimeEnabled,
-    lastSyncTimestamp,
-    syncAll,
-  } = useNoteStore();
+
+  // Only subscribe to what's actually needed
+  const activeNoteId    = useNoteStore(state => state.activeNoteId);
+  const isSynced        = useNoteStore(state => state.isSynced);
+  const realtimeEnabled = useNoteStore(state => state.realtimeEnabled);
+  const syncAll         = useNoteStore(state => state.syncAll);
+  const resetStore      = useNoteStore(state => state.resetStore);
+  const disableRealtime = useNoteStore(state => state.disableRealtime);
+  const _enableRealtime = useNoteStore(state => state.enableRealtime);
 
   const enableRealtime = _enableRealtime as (userId: string) => void;
 
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Memoize sync function to prevent recreation
+  const handleSync = useCallback(async () => {
+    if (user && !loading && !isSynced && !isSyncing) {
+      console.log("Syncing with Supabase for user:", user.id);
+      try {
+        setIsSyncing(true);
+        await syncAll(user.id);
+        if (!realtimeEnabled && user.id) {
+          enableRealtime(user.id);
+          toast.success("Real-time sync enabled");
+        }
+      } catch (error) {
+        console.error("Error syncing with Supabase:", error);
+        toast.error("Failed to sync with Supabase");
+      } finally {
+        setIsSyncing(false);
+      }
+    }
+  }, [user, loading, isSynced, isSyncing, syncAll, realtimeEnabled, enableRealtime]);
+
   // Sync notes with Supabase when user signs in
   useEffect(() => {
-    let isActive = true; // for preventing state updates after unmount
-    
-    const syncData = async () => {
-      if (user && !loading && !isSynced && !isSyncing) {
-        console.log("Syncing with Supabase for user:", user.id);
-        try {
-          setIsSyncing(true);
-          await syncAll(user.id);
-          if (isActive && !realtimeEnabled && user.id) {
-            enableRealtime(user.id);
-            toast.success("Real-time sync enabled");
-          }
-        } catch (error) {
-          console.error("Error syncing with Supabase:", error);
-          toast.error("Failed to sync with Supabase");
-        } finally {
-          if (isActive) setIsSyncing(false);
-        }
-      }
-    };
+    let isActive = true;
 
-    syncData();
-    
+    handleSync();
+
     // Ensure real-time sync remains enabled if user is authenticated
     if (user && !loading && isSynced && !realtimeEnabled) {
       console.log("Re-enabling real-time sync");
       if (user?.id) enableRealtime(user.id);
     }
-    
+
     // Cleanup real-time subscription when component unmounts
     return () => {
       isActive = false;
     };
-  }, [user, loading, isSynced, enableRealtime, realtimeEnabled, isSyncing]);
+  }, [user, loading, isSynced, enableRealtime, realtimeEnabled, handleSync]);
 
   // Re-establish realtime connection if it was disabled
   useEffect(() => {

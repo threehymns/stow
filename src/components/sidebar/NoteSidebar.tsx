@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import useNoteStore from "@/store/noteStore";
@@ -18,6 +18,7 @@ import { useCommand } from "@/hooks/commandCenter";
 export function NoteSidebar() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   const {
     notes,
@@ -111,14 +112,11 @@ export function NoteSidebar() {
     const folder = folders.find((f) => f.id === editingItemId);
     if (folder) {
       handleUpdateFolder(editingItemId, { name: editingName });
+      updateNote(editingItemId, { title: editingName }, user.id).catch(
+        (error) => console.error("Failed to update note title:", error)
+      );
     } else {
-      if (user?.id) {
-        updateNote(editingItemId, { title: editingName }, user.id).catch(
-          (error) => console.error("Failed to update note title:", error),
-        );
-      } else {
-        console.error("User ID missing, cannot update remotely");
-      }
+      console.error("User ID missing, cannot update remotely");
     }
     setEditingItemId(null);
   };
