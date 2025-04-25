@@ -176,11 +176,8 @@ function KeybindingField({
   action: { id: string; label: string; description?: string }; 
   bindings: Record<string, string[]> | undefined; 
   defaultBindings: Record<string, string[]>;
--  setSetting: (id: string, value: any) => void; 
-+  setSetting: (id: string, value: string | boolean | number | Record<string, string[]>) => void; 
+  setSetting: (id: string, value: string | boolean | number | Record<string, string[]>) => void; 
 }) {
-  // ...
-}
   // Add safety check for bindings
   const bindingsObj = bindings || {};
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
