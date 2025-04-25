@@ -107,8 +107,8 @@ export default function Settings() {
                                 {setting.name}
                               </Label>
                               <Select
-                                value={getSetting(setting.id as any) as string}
-                                onValueChange={(value) => setSetting(setting.id as any, value)}
+                                value={getSetting(setting.id) as string}
+                                onValueChange={(value) => setSetting(setting.id, value)}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select font" />
