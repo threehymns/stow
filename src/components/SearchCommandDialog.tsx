@@ -23,6 +23,7 @@ export function SearchCommandDialog() {
   const [open, setOpen] = useState(false);
   const { notes, setActiveNoteId } = useNoteStore();
   const [searchResults, setSearchResults] = useState<typeof notes>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     // Register command handler for Ctrl+K
@@ -38,7 +39,10 @@ export function SearchCommandDialog() {
   }, []);
 
   // Register with command center
-  const handleOpenDialog = useCallback(() => setOpen(true), []);
+  const handleOpenDialog = useCallback(() => {
+    setOpen(true);
+    handleSearch("");
+  }, []);
   useEffect(() => {
     commandCenter.on("searchNotes", handleOpenDialog);
     return () => {
@@ -46,15 +50,16 @@ export function SearchCommandDialog() {
     };
   }, [handleOpenDialog]);
 
-  const handleSearch = (searchTerm: string) => {
-    if (!searchTerm) {
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (!term) {
       setSearchResults([]);
       return;
     }
 
     const results = notes.filter((note) => {
-      const titleMatch = note.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const contentMatch = note.content?.toLowerCase().includes(searchTerm.toLowerCase());
+      const titleMatch = note.title.toLowerCase().includes(term.toLowerCase());
+      const contentMatch = note.content?.toLowerCase().includes(term.toLowerCase());
       return titleMatch || contentMatch;
     });
 
@@ -74,23 +79,26 @@ export function SearchCommandDialog() {
         onValueChange={handleSearch}
       />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Notes">
-          {searchResults.map((note) => (
-            <CommandItem
-              key={note.id}
-              onSelect={() => handleSelectNote(note.id)}
-              className="flex flex-col items-start gap-1"
-            >
-              <div className="font-medium">{note.title}</div>
-              {note.content && (
-                <div className="text-sm text-muted-foreground line-clamp-1">
-                  {note.content.replace(/<[^>]*>/g, '')}
-                </div>
-              )}
-            </CommandItem>
-          ))}
-        </CommandGroup>
+        {searchResults.length === 0 ? (
+          searchTerm !== "" && <CommandEmpty>No results found.</CommandEmpty>
+        ) : (
+          <CommandGroup heading="Notes" forceMount>
+            {searchResults.map((note) => (
+              <CommandItem
+                key={note.id}
+                onSelect={() => handleSelectNote(note.id)}
+                className="flex flex-col items-start gap-1"
+              >
+                <div className="font-medium">{note.title}</div>
+                {note.content && (
+                  <div className="text-sm text-muted-foreground line-clamp-1">
+                    {note.content.replace(/<[^>]*>/g, '')}
+                  </div>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
       </CommandList>
     </CommandDialog>
   );
