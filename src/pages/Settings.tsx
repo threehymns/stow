@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -23,6 +22,11 @@ import { Edit2, Check, X } from "lucide-react";
 import { Keybinding } from "@/components/ui/Keybinding";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
+/**
+ * Renders the main settings page with categorized settings and a navigable table of contents.
+ *
+ * Displays grouped settings categories in a two-column layout: a sticky sidebar for navigation and a main content area for editing settings. Specialized controls are provided for appearance-related settings, including font selection with live previews.
+ */
 export default function Settings() {
   const { setSetting, getSetting, settingsCategories } = useSettingsStore();
 
@@ -153,6 +157,16 @@ export default function Settings() {
   );
 }
 
+/**
+ * Renders an interactive field for managing keybindings for a specific action.
+ *
+ * Allows users to view, add, edit, remove, and reset keybindings associated with the given action. Key combinations are captured via keyboard input and updated in the settings.
+ *
+ * @param action - The action for which keybindings are managed, including its id, label, and optional description.
+ * @param bindings - The current keybindings mapping, or undefined if not set.
+ * @param defaultBindings - The default keybindings mapping for all actions.
+ * @param setSetting - Function to update the keybindings setting.
+ */
 function KeybindingField({ 
   action, 
   bindings, 
@@ -311,6 +325,16 @@ function KeybindingField({
   );
 }
 
+/**
+ * Renders the appropriate input control for a given setting based on its type.
+ *
+ * For "select" settings, displays a labeled toggle group with options, supporting icons and theme previews. For "toggle" settings, renders a labeled switch. For "keybindings" settings, renders a list of keybinding fields for each action.
+ *
+ * @param setting - The setting definition to render.
+ * @param getSetting - Function to retrieve the current value of a setting by its ID.
+ * @param setSetting - Function to update the value of a setting by its ID.
+ * @returns The JSX element representing the setting's input control.
+ */
 function renderSetting(
   setting: SettingType,
   getSetting: (id: string) => string | boolean | number | Record<string, string[]>,
