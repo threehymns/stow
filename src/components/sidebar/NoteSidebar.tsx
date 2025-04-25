@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import useNoteStore from "@/store/noteStore";
@@ -18,6 +18,7 @@ import { useCommand } from "@/hooks/commandCenter";
 export function NoteSidebar() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   const {
     notes,
@@ -64,7 +65,7 @@ export function NoteSidebar() {
     const newFolderId = await createFolder("New Folder", user.id);
     setEditingItemId(newFolderId);
     const untitledCount = folders.filter(
-      (n) => n.parentId === parentId && n.name.startsWith("New Folder"),
+      (n) => n.parentId === parentId && n.name.startsWith("New Folder")
     ).length;
     setEditingName(`New Folder ${untitledCount + 1}`);
   };
@@ -77,13 +78,44 @@ export function NoteSidebar() {
     const newNoteId = await createNote(parentId, user.id);
     setEditingItemId(newNoteId);
     const untitledCount = notes.filter(
-      (n) => n.folderId === parentId && n.title.startsWith("Untitled Note"),
+      (n) => n.folderId === parentId && n.title.startsWith("Untitled Note")
     ).length;
     setEditingName(`Untitled Note ${untitledCount + 1}`);
   };
 
   useCommand("newNote", handleCreateNote);
   useCommand("newFolder", handleCreateFolder);
+
+  // Memoized filtered notes to prevent unnecessary recalculations
+  const filteredNotes = useMemo(
+    () =>
+      activeFolderId
+        ? notes.filter((note) => note.folderId === activeFolderId)
+        : notes,
+    [notes, activeFolderId]
+  );
+
+  // Memoized callback handlers to prevent unnecessary re-creations
+  const handleSelectFolder = useCallback(
+    (folderId: string | null) => {
+      setActiveFolderId(folderId);
+    },
+    [setActiveFolderId]
+  );
+
+  const handleAddFolder = useCallback(
+    (parentId: string | null) => {
+      handleCreateFolder(parentId);
+    },
+    [handleCreateFolder]
+  );
+
+  const handleAddNote = useCallback(
+    (parentId: string | null) => {
+      handleCreateNote(parentId);
+    },
+    [handleCreateNote]
+  );
 
   // Helper to get all child folder IDs (recursively)
   const getChildFolderIds = (parentId: string | null): string[] => {
@@ -97,7 +129,7 @@ export function NoteSidebar() {
   // Helper to check if moving a folder would create a cycle
   const wouldCreateCycle = (
     folderId: string,
-    targetParentId: string,
+    targetParentId: string
   ): boolean => {
     if (folderId === targetParentId) return true;
     const childIds = getChildFolderIds(folderId);
@@ -114,7 +146,7 @@ export function NoteSidebar() {
     } else {
       if (user?.id) {
         updateNote(editingItemId, { title: editingName }, user.id).catch(
-          (error) => console.error("Failed to update note title:", error),
+          (error) => console.error("Failed to update note title:", error)
         );
       } else {
         console.error("User ID missing, cannot update remotely");

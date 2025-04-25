@@ -16,6 +16,14 @@ import {
 } from "@/services/noteService";
 import { SyncManager } from "@/services/SyncManager";
 
+  // Selectors for granular subscriptions
+  export const selectNotes       = (state: NoteState) => state.notes
+  export const selectFolders     = (state: NoteState) => state.folders
+  export const selectActiveId    = (state: NoteState) => state.activeNoteId
+  export const selectIsSynced    = (state: NoteState) => state.isSynced
+  export const selectRealtime    = (state: NoteState) => state.realtimeEnabled
+  export const selectLastSync    = (state: NoteState) => state.lastSyncTimestamp
+
 /**
  * Debounce utility
  */
@@ -465,7 +473,7 @@ const useNoteStore = create<NoteState>()(
 
           realtimeChannels = { note: noteChannel, folder: folderChannel };
 
-          set({ realtimeEnabled: true });
+          set(() => ({ realtimeEnabled: true }));
         },
 
         disableRealtime: () => {
@@ -479,7 +487,7 @@ const useNoteStore = create<NoteState>()(
               console.error("Error removing channel:", error);
             }
           }
-          set({ realtimeEnabled: false });
+          set(() => ({ realtimeEnabled: false }));
         },
 
         setActiveNoteId: (id) => {
@@ -555,7 +563,7 @@ const useNoteStore = create<NoteState>()(
         },
 
         resetStore: () => {
-          set({
+          set(() => ({
             notes: [],
             folders: [],
             activeNoteId: null,
@@ -574,7 +582,7 @@ const useNoteStore = create<NoteState>()(
               sync: false,
             },
             errorStates: {},
-          });
+          }));
         },
 
         setupPresenceChannel: (userId: string) => {
@@ -740,14 +748,12 @@ const useNoteStore = create<NoteState>()(
             );
             set(state => {
               const currentActive = state.activeNoteId;
-              const newActive =
-                currentActive && newNotes.some(n => n.id === currentActive)
-                  ? currentActive
-                  : newNotes[0]?.id ?? null;
               return {
                 notes: newNotes,
                 folders: newFolders,
-                activeNoteId: newActive,
+                activeNoteId: currentActive && newNotes.some(n => n.id === currentActive)
+                  ? currentActive
+                  : newNotes[0]?.id ?? null,
                 isSynced: true,
                 lastSyncTimestamp: getCurrentTimestamp(),
               };
