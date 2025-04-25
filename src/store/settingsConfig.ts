@@ -117,6 +117,7 @@ export const settings = [
     id: 'keybindings',
     type: 'keybindings' as const,
     label: 'Keyboard Shortcuts',
+    category: 'shortcuts',
     actions: [
       {
         id: 'newNote',
