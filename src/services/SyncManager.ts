@@ -1,14 +1,18 @@
 import type { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
 import { retryWithBackoff } from "./noteService";
 
-export interface SyncConfig<Local> {
+export interface Identifiable {
+  id: string;
+}
+
+export interface SyncConfig<Local extends Identifiable> {
   table: string;
   mapRow: (row: any) => Local;
   mapLocal: (item: Local, userId: string) => Record<string, unknown>;
   updatedAtColumn?: string;
 }
 
-export class SyncManager<Local> {
+export class SyncManager<Local extends Identifiable> {
   constructor(private supabase: SupabaseClient, private cfg: SyncConfig<Local>) {}
 
   /**
@@ -28,11 +32,11 @@ export class SyncManager<Local> {
     if (fetchError) throw fetchError; // Propagate fetch errors
 
     const remoteRows = remoteRowsData || [];
-    const remoteItems = (remoteRows as any[]).map(r => this.cfg.mapRow(r));
-    const remoteIds = new Set(remoteItems.map((item: any) => (item as any).id));
+    const remoteItems = remoteRows.map(r => this.cfg.mapRow(r));
+    const remoteIds = new Set(remoteItems.map(item => item.id));
 
     // 2. Detect local-only items (items in input localItems not present in remoteItems)
-    const localOnlyItems = localItems.filter(item => !remoteIds.has((item as any).id));
+    const localOnlyItems = localItems.filter(item => !remoteIds.has(item.id));
 
     // 3. Insert local-only items into the remote database
     if (localOnlyItems.length) {
