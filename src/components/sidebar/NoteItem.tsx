@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { FileText } from "lucide-react";
 import { format } from "date-fns";
+import React from "react";
 import { Note, Folder } from "@/types/notes";
 import { EditableItem } from "./EditableItem";
 import { NoteContextMenu } from "./NoteContextMenu";
@@ -20,7 +21,7 @@ interface NoteItemProps {
   deleteNote: (id: string) => void;
 }
 
-export function NoteItem({
+function NoteItemComponent({
   note,
   activeNoteId,
   editingItemId,
@@ -46,7 +47,7 @@ export function NoteItem({
       }}
       className={cn(
         "flex items-start rounded-md pl-2 pr-1 py-2 relative group/item hover:bg-sidebar-accent",
-        activeNoteId === note.id ? "bg-sidebar-accent" : "",
+        activeNoteId === note.id ? "bg-sidebar-accent" : ""
       )}
     >
       <FileText
@@ -80,3 +81,18 @@ export function NoteItem({
     </div>
   );
 }
+
+// Wrap the component with React.memo and prevent rerenders when unrelated notes update
+export const NoteItem = React.memo(
+  NoteItemComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.note.id === nextProps.note.id &&
+      prevProps.note.title === nextProps.note.title &&
+      prevProps.note.updatedAt === nextProps.note.updatedAt &&
+      prevProps.activeNoteId === nextProps.activeNoteId &&
+      prevProps.editingItemId === nextProps.editingItemId &&
+      prevProps.editingName === nextProps.editingName
+    );
+  }
+);

@@ -17,6 +17,8 @@ import { EditableItem } from "./EditableItem";
 import { FolderContextMenu } from "./FolderContextMenu";
 import { NoteItem } from "./NoteItem";
 
+import React from "react";
+
 interface FolderItemProps {
   folder: Folder;
   notes: Note[];
@@ -39,7 +41,7 @@ interface FolderItemProps {
   wouldCreateCycle: (folderId: string, targetParentId: string) => boolean;
 }
 
-export function FolderItem({
+function FolderItem({
   folder,
   notes,
   folders,
@@ -63,9 +65,11 @@ export function FolderItem({
   // Ensure isExpanded is a boolean
   const isExpanded = !!expandedFolders[folder.id];
 
-  // Find child folders and notes
+  // Find child folders
   const subfolders = folders.filter((f) => f.parentId === folder.id);
-  const folderNotes = notes.filter((note) => note.folderId === folder.id);
+  // Notes are now already filtered for this folder
+  const folderNotes = notes;
+
 
   return (
     <div key={folder.id}>
@@ -204,3 +208,44 @@ export function FolderItem({
     </div>
   );
 }
+
+function areEqual(prevProps: FolderItemProps, nextProps: FolderItemProps) {
+  // Compare folder shallowly
+  if (prevProps.folder !== nextProps.folder) return false;
+  // Compare notes array by id, title, updatedAt, archived
+  if (prevProps.notes.length !== nextProps.notes.length) return false;
+  for (let i = 0; i < prevProps.notes.length; i++) {
+    const prev = prevProps.notes[i];
+    const next = nextProps.notes[i];
+    if (
+      prev.id !== next.id ||
+      prev.title !== next.title ||
+      prev.updatedAt !== next.updatedAt
+    ) {
+      return false;
+    }
+  }
+  // Compare other relevant props shallowly
+  return (
+    prevProps.folders === nextProps.folders &&
+    prevProps.activeNoteId === nextProps.activeNoteId &&
+    prevProps.expandedFolders === nextProps.expandedFolders &&
+    prevProps.editingItemId === nextProps.editingItemId &&
+    prevProps.editingName === nextProps.editingName &&
+    prevProps.toggleFolderExpanded === nextProps.toggleFolderExpanded &&
+    prevProps.handleCreateFolder === nextProps.handleCreateFolder &&
+    prevProps.handleCreateNote === nextProps.handleCreateNote &&
+    prevProps.setEditingItemId === nextProps.setEditingItemId &&
+    prevProps.setEditingName === nextProps.setEditingName &&
+    prevProps.handleRenameSubmit === nextProps.handleRenameSubmit &&
+    prevProps.updateFolder === nextProps.updateFolder &&
+    prevProps.deleteFolder === nextProps.deleteFolder &&
+    prevProps.setActiveNoteId === nextProps.setActiveNoteId &&
+    prevProps.moveNote === nextProps.moveNote &&
+    prevProps.deleteNote === nextProps.deleteNote &&
+    prevProps.wouldCreateCycle === nextProps.wouldCreateCycle
+  );
+}
+
+const MemoizedFolderItem = React.memo(FolderItem, areEqual);
+export { MemoizedFolderItem as FolderItem };
