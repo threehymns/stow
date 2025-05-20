@@ -1,6 +1,6 @@
 
 import React from "react";
-import useNoteStore from "@/store/noteStore";
+import useNoteStore, { selectFolders, selectNotes } from "@/store/noteStore";
 import { FolderPlus, Plus, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -13,15 +13,12 @@ import { toast } from "sonner";
 import { getCurrentTimestamp, createNote as createNoteService, createFolder as createFolderService, syncNotesAndFolders } from "@/services/noteService";
 import { Note, Folder } from "@/types/notes";
 
-const HeaderActions = () => {
-  const {
-    notes,
-    folders,
-    createNote,
-    createFolder,
-    isLoading,
-  } = useNoteStore();
-
+const HeaderActions = React.memo(() => {
+  const folders = useNoteStore(selectFolders);
+  const notes = useNoteStore(selectNotes);
+  const isLoading = useNoteStore(state => state.isLoading);
+  const createNote = useNoteStore(state => state.createNote);
+  const createFolder = useNoteStore(state => state.createFolder);
   const { user } = useAuth();
   const sidebar = useSidebar();
 
@@ -75,53 +72,16 @@ const HeaderActions = () => {
     [],
   );
 
-  const handleCreateFolder = async () => {
-    const now = getCurrentTimestamp();
-    const newFolder: Folder = {
-      id: uuidv4(),
-      name: `New Folder ${folders.length}`,
-      createdAt: now,
-      parentId: null,
-    };
+  const handleCreateFolder = React.useCallback(async () => {
+    if (!user?.id) return;
+    await createFolder("New Folder", user.id);
+  }, [folders.length, createFolder, user?.id]);
 
-    try {
-      if (user?.id) {
-        await createFolderService(newFolder, user.id);
-      }
-      createFolder(newFolder.name, user.id);
-      toast.success("New folder created");
-    } catch (error: unknown) {
-      console.error("Failed to create folder:", error instanceof Error ? error.message : error);
-      toast.error("Failed to create folder");
-    }
-  };
+  const handleCreateNote = React.useCallback(async () => {
+    if (!user?.id) return;
+    await createNote(null, user.id);
+  }, [createNote, user?.id]);
 
-  const handleCreateNote = async () => {
-    const now = getCurrentTimestamp();
-    const newNote: Note = {
-      id: uuidv4(),
-      title: "Untitled Note",
-      content: "",
-      createdAt: now,
-      updatedAt: now,
-      folderId: null,
-    };
-
-    try {
-      if (user?.id) {
-        await createNoteService(newNote, user.id);
-      }
-      if (user?.id) {
-        await createNote(null, user.id);
-        toast.success("New note created");
-      } else {
-        console.error("User ID missing, cannot create remotely");
-      }
-    } catch (error: unknown) {
-      console.error("Failed to create note:", error instanceof Error ? error.message : error);
-      toast.error("Failed to create note");
-    }
-  };
 
   const handleSync = async () => {
     if (!user?.id) return;
@@ -213,6 +173,6 @@ const HeaderActions = () => {
       </AnimatePresence>
     </div>
   );
-};
+});
 
 export default HeaderActions;

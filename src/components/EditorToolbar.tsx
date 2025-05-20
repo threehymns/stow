@@ -18,7 +18,7 @@ import {
 import { Toggle } from "@/components/ui/toggle";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
@@ -32,7 +32,8 @@ interface EditorToolbarProps {
   className?: string;
 }
 
-export function EditorToolbar({ editor, className }: EditorToolbarProps) {
+export const EditorToolbar = memo(
+  function EditorToolbarComponent({ editor, className }: EditorToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
 
@@ -224,4 +225,6 @@ export function EditorToolbar({ editor, className }: EditorToolbarProps) {
       </div>
     </div>
   );
-}
+  },
+  (prev, next) => prev.editor === next.editor
+);

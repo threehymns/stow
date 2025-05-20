@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import useNoteStore from "@/store/noteStore";
+import useNoteStore, { selectActiveId, selectFolders, selectNotes } from "@/store/noteStore";
 import { FolderPlus, Plus, Loader2 } from "lucide-react";
 import {
   Sidebar,
@@ -20,22 +20,20 @@ export function NoteSidebar() {
   const [editingName, setEditingName] = useState("");
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
-  const {
-    notes,
-    folders,
-    activeNoteId,
-    expandedFolders,
-    isLoading,
-    setActiveNoteId,
-    createNote,
-    deleteNote,
-    createFolder,
-    updateFolder,
-    deleteFolder,
-    toggleFolderExpanded,
-    moveNote,
-    updateNote,
-  } = useNoteStore();
+  const folders = useNoteStore(selectFolders);
+  const notes = useNoteStore(selectNotes);1
+  const activeNoteId = useNoteStore(selectActiveId);
+  const expandedFolders = useNoteStore(state => state.expandedFolders);
+  const isLoading = useNoteStore(state => state.isLoading);
+  const setActiveNoteId = useNoteStore(state => state.setActiveNoteId);
+  const createNote = useNoteStore(state => state.createNote);
+  const deleteNote = useNoteStore(state => state.deleteNote);
+  const createFolder = useNoteStore(state => state.createFolder);
+  const updateFolder = useNoteStore(state => state.updateFolder);
+  const deleteFolder = useNoteStore(state => state.deleteFolder);
+  const toggleFolderExpanded = useNoteStore(state => state.toggleFolderExpanded);
+  const moveNote = useNoteStore(state => state.moveNote);
+  const updateNote = useNoteStore(state => state.updateNote);
 
   const { user } = useAuth();
 
@@ -188,42 +186,44 @@ export function NoteSidebar() {
         ) : (
           <div className="p-2 select-none">
             <div className="pl-0 space-y-0.5">
-              {rootFolders.map((folder) => (
-                <FolderItem
-                  key={folder.id}
-                  folder={folder}
-                  notes={notes}
-                  folders={folders}
-                  activeNoteId={activeNoteId}
-                  expandedFolders={typedExpandedFolders}
-                  editingItemId={editingItemId}
-                  editingName={editingName}
-                  toggleFolderExpanded={toggleFolderExpanded}
-                  handleCreateFolder={handleCreateFolder}
-                  handleCreateNote={handleCreateNote}
-                  setEditingItemId={setEditingItemId}
-                  setEditingName={setEditingName}
-                  handleRenameSubmit={handleRenameSubmit}
-                  updateFolder={handleUpdateFolder}
-                  deleteFolder={handleDeleteFolder}
-                  setActiveNoteId={setActiveNoteId}
-                  moveNote={async (noteId, folderId) => {
-                    if (user?.id) {
-                      await moveNote(noteId, folderId, user.id);
-                    } else {
-                      console.error("User ID missing, cannot move remotely");
-                    }
-                  }}
-                  deleteNote={async (noteId) => {
-                    if (user?.id) {
-                      await deleteNote(noteId, user.id);
-                    } else {
-                      console.error("User ID missing, cannot delete remotely");
-                    }
-                  }}
-                  wouldCreateCycle={wouldCreateCycle}
+              {rootFolders.map((folder) => {
+                  const folderNotes = notes.filter((note) => note.folderId === folder.id);
+                  return (
+                    <FolderItem
+                      key={folder.id}
+                      folder={folder}
+                    notes={folderNotes}
+                    folders={folders}
+                    activeNoteId={activeNoteId}
+                    expandedFolders={typedExpandedFolders}
+                    editingItemId={editingItemId}
+                    editingName={editingName}
+                    toggleFolderExpanded={toggleFolderExpanded}
+                    handleCreateFolder={handleCreateFolder}
+                    handleCreateNote={handleCreateNote}
+                    setEditingItemId={setEditingItemId}
+                    setEditingName={setEditingName}
+                    handleRenameSubmit={handleRenameSubmit}
+                    updateFolder={handleUpdateFolder}
+                    deleteFolder={handleDeleteFolder}
+                    setActiveNoteId={setActiveNoteId}
+                    moveNote={async (noteId, folderId) => {
+                      if (user?.id) {
+                        await moveNote(noteId, folderId, user.id);
+                      } else {
+                        console.error("User ID missing, cannot move remotely");
+                      }
+                    }}
+                    deleteNote={async (noteId) => {
+                      if (user?.id) {
+                        await deleteNote(noteId, user.id);
+                      } else {
+                        console.error("User ID missing, cannot delete remotely");
+                      }
+                    }}
+                    wouldCreateCycle={wouldCreateCycle}
                 />
-              ))}
+              )})}
 
               {rootNotes.map((note) => (
                 <NoteItem
