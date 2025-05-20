@@ -36,19 +36,25 @@ export class SyncManager<Local> {
 
     // 3. Insert local-only items into the remote database
     if (localOnlyItems.length) {
-      await retryWithBackoff(async () => {
-        const payload = localOnlyItems.map(item => this.cfg.mapLocal(item, userId));
-        const { error: insertError } = await this.supabase
-          .from(this.cfg.table)
-          .insert(payload); // Use insert for new items
+      try {
+        await retryWithBackoff(async () => {
+          const payload = localOnlyItems.map(item => this.cfg.mapLocal(item, userId));
+          const { error: insertError } = await this.supabase
+            .from(this.cfg.table)
+            .insert(payload); // Use insert for new items
 
-        if (insertError) {
-          // Log error and continue, as primary goal is to refresh cache from server.
-          // These items might get reconciled in a future sync or by specific user actions.
-          console.warn(`[SyncManager] Error inserting local-only items for table ${this.cfg.table}: ${insertError.message}. Items:`, localOnlyItems);
-          // Do not throw here, allow sync to proceed with fetched remote items
-        }
-      });
+          if (insertError) {
+            // Let retryWithBackoff handle retries.
+            throw insertError;
+          }
+        });
+      } catch (insertError) {
+        // All retries exhausted – keep going but surface the issue for observability.
+        console.warn(
+          `[SyncManager] Failed to insert local-only items for table ${this.cfg.table} after retries: ${(insertError as Error).message}`,
+          localOnlyItems
+        );
+      }
     }
 
     // 4. Return remote items and the original local-only items for cache update
