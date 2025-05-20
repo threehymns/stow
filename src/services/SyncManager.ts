@@ -16,18 +16,7 @@ export class SyncManager<Local> {
    * @param since ISO timestamp to filter remote updates (inclusive)
    */
   async sync(userId: string, localItems: Local[], since?: string): Promise<Local[]> {
-    // upsert local items
-    if (localItems.length) {
-      await retryWithBackoff(async () => {
-        const payload = localItems.map(item => this.cfg.mapLocal(item, userId));
-        const { error } = await this.supabase
-          .from(this.cfg.table)
-          .upsert(payload, { onConflict: "id" });
-        if (error) throw error;
-      });
-    }
-
-    // fetch remote items (optionally incremental)
+    // 1. Fetch remote items (optionally incremental) - (existing code)
     let query = this.supabase
       .from(this.cfg.table)
       .select("*")
@@ -35,18 +24,37 @@ export class SyncManager<Local> {
     if (since && this.cfg.updatedAtColumn) {
       query = query.gt(this.cfg.updatedAtColumn, since);
     }
-    const { data: rows, error } = await query;
-    if (error) throw error;
-    const remoteRows = rows || [];
+    const { data: remoteRowsData, error: fetchError } = await query;
+    if (fetchError) throw fetchError; // Propagate fetch errors
 
-    // map rows to Local
+    const remoteRows = remoteRowsData || [];
     const remoteItems = (remoteRows as any[]).map(r => this.cfg.mapRow(r));
-
-    // detect local-only items
     const remoteIds = new Set(remoteItems.map((item: any) => (item as any).id));
-    const localOnly = localItems.filter(item => !remoteIds.has((item as any).id));
 
-    return [...remoteItems, ...localOnly];
+    // 2. Detect local-only items (items in input localItems not present in remoteItems)
+    const localOnlyItems = localItems.filter(item => !remoteIds.has((item as any).id));
+
+    // 3. Insert local-only items into the remote database
+    if (localOnlyItems.length) {
+      await retryWithBackoff(async () => {
+        const payload = localOnlyItems.map(item => this.cfg.mapLocal(item, userId));
+        const { error: insertError } = await this.supabase
+          .from(this.cfg.table)
+          .insert(payload); // Use insert for new items
+
+        if (insertError) {
+          // Log error and continue, as primary goal is to refresh cache from server.
+          // These items might get reconciled in a future sync or by specific user actions.
+          console.warn(`[SyncManager] Error inserting local-only items for table ${this.cfg.table}: ${insertError.message}. Items:`, localOnlyItems);
+          // Do not throw here, allow sync to proceed with fetched remote items
+        }
+      });
+    }
+
+    // 4. Return remote items and the original local-only items for cache update
+    // The local cache will be updated with what's on the server + new items created locally.
+    // If an insert failed, the local-only item remains in the cache and might be retried next sync.
+    return [...remoteItems, ...localOnlyItems];
   }
 
   subscribe(
