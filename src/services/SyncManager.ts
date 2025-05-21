@@ -85,8 +85,8 @@ export class SyncManager<Local extends Identifiable> {
         
         // Use deep equality check instead of JSON.stringify for accurate object comparison
         if (!deepEqual(localWithoutTs, remoteWithoutTs)) {
-          // Default to local being newer if timestamps are not available or invalid
-          const localTimeRaw = localUpdatedAt ? new Date(localUpdatedAt).getTime() : Number.MAX_SAFE_INTEGER;
+          // Default to treating items with missing timestamps as older than any item with a valid timestamp
+          const localTimeRaw = localUpdatedAt ? new Date(localUpdatedAt).getTime() : Number.NEGATIVE_INFINITY;
           const localTime = Number.isNaN(localTimeRaw) ? Number.NEGATIVE_INFINITY : localTimeRaw;
           const remoteTimeRaw = remoteUpdatedAt ? new Date(remoteUpdatedAt).getTime() : Number.NEGATIVE_INFINITY;
           const remoteTime = Number.isFinite(remoteTimeRaw) ? remoteTimeRaw : Number.NEGATIVE_INFINITY;
