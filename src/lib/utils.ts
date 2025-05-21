@@ -44,3 +44,40 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     timeout = setTimeout(later, wait);
   };
 }
+
+export function deepEqual(obj1: unknown, obj2: unknown): boolean {
+  const seen = new WeakMap<object, object>();
+  function inner(a: unknown, b: unknown): boolean {
+    // primitive / reference
+    if (a === b) return true;
+    if (a == null || b == null || typeof a !== "object" || typeof b !== "object") return false;
+
+    if (seen.get(a as object) === b) return true;
+    seen.set(a as object, b as object);
+
+    if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) return false;
+
+    // Handle built-ins that need value-level equality
+    if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+    if (a instanceof RegExp && b instanceof RegExp)
+      return a.source === b.source && a.flags === b.flags;
+    if (a instanceof Map && b instanceof Map)
+      return a.size === b.size && [...a.entries()].every(([k, v]) => b.has(k) && inner(v, b.get(k)));
+    if (a instanceof Set && b instanceof Set)
+      return a.size === b.size && [...a].every(v => b.has(v));
+
+    const keysA = Reflect.ownKeys(a as object);
+    const keysB = Reflect.ownKeys(b as object);
+    if (keysA.length !== keysB.length) return false;
+
+    return keysA.every(key =>
+      keysB.includes(key) &&
+      inner(
+        (a as Record<PropertyKey, unknown>)[key],
+        (b as Record<PropertyKey, unknown>)[key]
+      )
+    );
+  }
+
+  return inner(obj1, obj2);
+}
